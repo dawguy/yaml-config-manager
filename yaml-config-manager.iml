@@ -17,10 +17,16 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Leiningen: clj-commons/clj-yaml:0.7.0" level="project" />
     <orderEntry type="library" name="Leiningen: clojure-complete:0.2.5" level="project" />
     <orderEntry type="library" name="Leiningen: nrepl:0.6.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/clojure:1.10.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/core.specs.alpha:0.2.44" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/spec.alpha:0.2.176" level="project" />
+    <orderEntry type="library" name="Leiningen: org.clojure/tools.macro:0.1.1" level="project" />
+    <orderEntry type="library" name="Leiningen: org.clojure/tools.reader:0.7.2" level="project" />
+    <orderEntry type="library" name="Leiningen: org.flatland/ordered:1.5.7" level="project" />
+    <orderEntry type="library" name="Leiningen: org.flatland/useful:0.11.6" level="project" />
+    <orderEntry type="library" name="Leiningen: org.yaml/snakeyaml:1.24" level="project" />
   </component>
 </module>
