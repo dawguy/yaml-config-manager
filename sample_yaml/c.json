@@ -1,0 +1,9 @@
+top.properties.abc=hello
+top.properties.end=worldC
+top.properties.list=a,b,c,d,e,f
+middle.yo.apple=startsWithLetterA
+middle.zzz.apple=isApple
+middle.zzz.watermelon=isWatermelonFromC
+middle.yo.patience=startsWithLetterP
+bottom=test
+cat=cat

@@ -1,0 +1,10 @@
+top.properties.abc=Bhello
+top.properties.end=Bworld
+top.properties.list=Ba,Bb,Bc,Bd,Be
+middle.yo.apple=BstartsWithLetterA
+middle.yo.cat=BstartsWithLetterC
+middle.yo.dolphin=BstartsWithLetterD
+middle.zzz.apple=BisApple
+middle.zzz.watermelon=BisWatermelon
+middle.yo.patience=BstartsWithLetterP
+bottom=Btest

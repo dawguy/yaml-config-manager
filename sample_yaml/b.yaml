@@ -1,0 +1,15 @@
+top:
+  properties:
+    list: Ba,Bb,Bc,Bd,Be
+    abc: Bhello
+    end: Bworld
+middle:
+  yo:
+    dolphin: BstartsWithLetterD
+    cat: BstartsWithLetterC
+    patience: BstartsWithLetterP
+    apple: BstartsWithLetterA
+  zzz:
+    watermelon: BisWatermelon
+    apple: BisApple
+bottom: Btest

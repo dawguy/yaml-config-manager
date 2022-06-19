@@ -1,0 +1,14 @@
+top:
+  properties:
+    list: a,b,c,d,e,f
+    abc: hello
+    end: worldC
+middle:
+  zzz:
+    watermelon: isWatermelonFromC
+    apple: isApple
+  yo:
+    patience: startsWithLetterP
+    apple: startsWithLetterA
+bottom: test
+cat: cat
