@@ -1,7 +1,6 @@
 (ns yaml-config-manager.core
   (:require [clj-yaml.core :as yaml]
             [clojure.java.io :as io])
-  (:use [clojure.walk :as [walk]])
   )
 
 (use 'yaml-config-manager.core :reload-all)
@@ -67,16 +66,18 @@
 )
 
 ; Test properties
-(def files (keys @app-db))
-(def props (reduce #(assoc %1 %2 (:properties (get @app-db %2))) {} files))
-(def all-property-names (reduce (fn [s p] (apply conj s (keys (second p)))) #{} props))
-(def n "middle.zzz.apple")
-(def properties [{:key "bottom", :ks [:bottom], :val "test", :file "sample_yaml/a.yaml"}
-                 {:key "bottom", :ks [:bottom], :val "Btest", :file "sample_yaml/b.yaml"}
-                 {:key "bottom", :ks [:bottom], :val "test", :file "sample_yaml/c.yaml"}])
-(def equal-properties [{:key "bottom", :ks [:bottom], :val "test", :file "sample_yaml/a.yaml"}
-                 {:key "bottom", :ks [:bottom], :val "test", :file "sample_yaml/b.yaml"}
-                 {:key "bottom", :ks [:bottom], :val "test", :file "sample_yaml/c.yaml"}])
+(comment "Helpers for testing functions"
+         (def files (keys @app-db))
+         (def props (reduce #(assoc %1 %2 (:properties (get @app-db %2))) {} files))
+         (def all-property-names (reduce (fn [s p] (apply conj s (keys (second p)))) #{} props))
+         (def n "middle.zzz.apple")
+         (def properties [{:prop "bottom", :ks [:bottom], :val "test", :file "sample_yaml/a.yaml"}
+                          {:prop "bottom", :ks [:bottom], :val "Btest", :file "sample_yaml/b.yaml"}
+                          {:prop "bottom", :ks [:bottom], :val "test", :file "sample_yaml/c.yaml"}])
+         (def equal-properties [{:prop "bottom", :ks [:bottom], :val "test", :file "sample_yaml/a.yaml"}
+                                {:prop "bottom", :ks [:bottom], :val "test", :file "sample_yaml/b.yaml"}
+                                {:prop "bottom", :ks [:bottom], :val "test", :file "sample_yaml/c.yaml"}])
+         )
 
 (defn get-properties [files] (reduce #(assoc %1 %2 (:properties (get @app-db %2))) {} files))
 (defn add-file [file-name properties] (map #(assoc (second %) :file file-name) properties))
@@ -84,13 +85,49 @@
                               get-properties
                               (map #(add-file (first %) (second %)))
                               flatten
-                              (group-by :key)
+                              (group-by :prop)
                               ))
 (defn same-values? [properties n]
   (and (= (count properties) n) (apply = (map :val properties))))
 (defn diff [files]
   (->> (group-files-by-key files)
        (filter (complement #(same-values? (second %) (count files))))
-       (into {})))
+       (into {})
+       ))
 
 (defn diff-all [] (diff (keys @app-db)))
+(comment "Diff-all easy access"
+   (diff-all))
+
+(comment "Helpers for creating generated strings"
+         (def props [{:prop "top.properties.end",
+                      :ks   [:top :properties :end],
+                      :val  "world",
+                      :file "sample_yaml/a.yaml"}
+                     {:prop "top.properties.end",
+                      :ks   [:top :properties :end],
+                      :val  "worldC",
+                      :file "sample_yaml/c.yaml"}])
+         (def prop-map {"top.properties.end" {"sample_yaml/a.yaml" {:prop "top.properties.end", :ks [:top :properties :end], :val "world", :file "sample_yaml/a.yaml"}, "sample_yaml/c.yaml" {:prop "top.properties.end", :ks [:top :properties :end], :val "worldC", :file "sample_yaml/c.yaml"}}, "middle.zzz.watermelon" {"sample_yaml/a.yaml" {:prop "middle.zzz.watermelon", :ks [:middle :zzz :watermelon], :val "isWatermelon", :file "sample_yaml/a.yaml"}, "sample_yaml/c.yaml" {:prop "middle.zzz.watermelon", :ks [:middle :zzz :watermelon], :val "isWatermelonFromC", :file "sample_yaml/c.yaml"}}, "top.properties.list" {"sample_yaml/a.yaml" {:prop "top.properties.list", :ks [:top :properties :list], :val "a,b,c,d,e", :file "sample_yaml/a.yaml"}, "sample_yaml/c.yaml" {:prop "top.properties.list", :ks [:top :properties :list], :val "a,b,c,d,e,f", :file "sample_yaml/c.yaml"}}, "cat" {"sample_yaml/c.yaml" {:prop "cat", :ks [:cat], :val "cat", :file "sample_yaml/c.yaml"}}})
+         )
+
+(defn rekey-props [props]
+  (reduce #(assoc %1 (:file %2) %2) {} props))
+(defn generate-strings [files prop-map]
+  (clojure.string/join "\n\n"
+     (map
+       (fn [[n props]] (str n "\n" (clojure.string/join "\n"
+          (map
+            (fn [f-name] (if (map? (get props f-name))
+                           (str f-name "=" (get-in props [f-name :val]))
+                           (str f-name "=DOES NOT EXIST"))) files)))) prop-map)))
+
+(defn diff-to-str [files]
+  (->> (diff files)
+       (reduce (fn [m [k ps]] (assoc m k (rekey-props ps))) {})
+       (generate-strings (sort files))
+   ))
+
+(comment "diff-to-str easy access"
+         (diff-to-str (keys @app-db))
+         )
