@@ -15,7 +15,7 @@
 )
 
 (def app-db (atom {}) )
-(defn reset-db [] (reset! app-db {}))
+(defn reset-db! [] (reset! app-db {}))
 
 (defn to-properties
   ([m] (to-properties [] [] m))
@@ -40,9 +40,13 @@
 (defn to-prop-name [ks] "Takes a key structure. Returns the spring properties that would be associated with it"
   (clojure.string/join "." (map name ks)))
 
-(defn attach-metadata [parsed-yaml]
-  (let [props (to-properties parsed-yaml)]
-    (reduce #(assoc %1 (to-prop-name (first %2)) {:prop (to-prop-name (first %2)), :ks (first %2), :val (second %2)}) {} props)
+(defn attach-metadata [mapped-yaml]
+  (let [props (to-properties mapped-yaml)]
+    (reduce (fn [m [ks ps]]
+              (if (nil? (first ks))
+                m
+                (assoc m (to-prop-name ks) {:prop (to-prop-name ks), :ks ks, :val ps}))
+              ) {} props)
     )
   )
 
@@ -52,17 +56,19 @@
   (attach-metadata c-parsed)
 )
 
-(defn read-file [f]
+(defn update-yaml! [f yaml mapped-yaml]
+  (swap! app-db assoc f {:yaml yaml, :mapped-yaml mapped-yaml, :properties (attach-metadata mapped-yaml)}))
+(defn read-file! [f]
   (if (.exists (io/file f))
     (let [yaml (slurp f)
-          parsed-yaml (yaml/parse-string yaml)]
-      (swap! app-db assoc f {:yaml yaml, :parsed-yaml parsed-yaml, :properties (attach-metadata parsed-yaml)}))))
+          mapped-yaml (yaml/parse-string yaml)]
+      (update-yaml! f yaml mapped-yaml))))
 
 (comment "Loads all yaml files used for testing purposes"
-  (read-file "sample_yaml/a.yaml")
-  (read-file "sample_yaml/b.yaml")
-  (read-file "sample_yaml/c.yaml")
-  (read-file "sample_yaml/non_existant.yaml")
+  (read-file! "sample_yaml/a.yaml")
+  (read-file! "sample_yaml/b.yaml")
+  (read-file! "sample_yaml/c.yaml")
+  (read-file! "sample_yaml/non_existant.yaml")
 )
 
 ; Test properties
@@ -121,13 +127,49 @@
             (fn [f-name] (if (map? (get props f-name))
                            (str f-name "=" (get-in props [f-name :val]))
                            (str f-name "=DOES NOT EXIST"))) files)))) prop-map)))
-
+(defn key-by-file-names [prop-map]
+  (reduce (fn [m [k ps]] (assoc m k (rekey-props ps))) {} prop-map)
+  )
 (defn diff-to-str [files]
   (->> (diff files)
-       (reduce (fn [m [k ps]] (assoc m k (rekey-props ps))) {})
+       (key-by-file-names)
        (generate-strings (sort files))
    ))
 
 (comment "diff-to-str easy access"
          (diff-to-str (keys @app-db))
          )
+
+(defn get-changed-properties [from-file to-file properties]
+  (->> (diff [from-file to-file])
+       (filter (fn [[k ps]] (contains? properties k)))
+       (into {})
+       (key-by-file-names)
+       (vals)
+       (map #(get % from-file))
+       (filter (complement nil?))
+       ))
+(defn apply-diff!
+  ([from-file to-file] "Default is apply everything that has changed" (apply-diff! from-file to-file (set (keys (diff [from-file to-file])))))
+  ([from-file to-file properties]
+   (let [changed-properties (get-changed-properties from-file to-file properties)
+         orig-yaml (:mapped-yaml (get @app-db to-file))
+         yaml (reduce #(assoc-in %1 (:ks %2) (:val %2)) orig-yaml changed-properties)]
+      (do
+        (update-yaml! to-file (yaml/generate-string yaml) yaml)
+        (:yaml (get @app-db to-file)))
+     )))
+
+(comment "apply-diff test helper"
+         (read-file! "sample_yaml/a.yaml")
+         (read-file! "sample_yaml/c.yaml")
+         (apply-diff! "sample_yaml/c.yaml" "sample_yaml/a.yaml")
+
+         (read-file! "sample_yaml/a.yaml")
+         (read-file! "sample_yaml/c.yaml")
+         (apply-diff! "sample_yaml/a.yaml" "sample_yaml/c.yaml")
+
+         (read-file! "sample_yaml/a.yaml")
+         (read-file! "sample_yaml/b.yaml")
+         (apply-diff! "sample_yaml/b.yaml" "sample_yaml/a.yaml")
+)
