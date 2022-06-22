@@ -149,16 +149,22 @@
        (map #(get % from-file))
        (filter (complement nil?))
        ))
+
+(defn apply-diff
+  ([from-file to-file] "Default is apply everything that has changed" (apply-diff from-file to-file (set (keys (diff [from-file to-file])))))
+  ([from-file to-file properties]
+   (let [changed-properties (get-changed-properties from-file to-file properties)
+         orig-yaml (:mapped-yaml (get @app-db to-file))]
+         (reduce #(assoc-in %1 (:ks %2) (:val %2)) orig-yaml changed-properties) ; TODO: This could probably be refactored out and commonalized so allvariations of properties can use it
+     )))
 (defn apply-diff!
   ([from-file to-file] "Default is apply everything that has changed" (apply-diff! from-file to-file (set (keys (diff [from-file to-file])))))
   ([from-file to-file properties]
-   (let [changed-properties (get-changed-properties from-file to-file properties)
-         orig-yaml (:mapped-yaml (get @app-db to-file))
-         yaml (reduce #(assoc-in %1 (:ks %2) (:val %2)) orig-yaml changed-properties)]
-      (do
-        (update-yaml! to-file (yaml/generate-string yaml) yaml)
-        (:yaml (get @app-db to-file)))
-     )))
+   (let [yaml (apply-diff from-file to-file properties)]
+     (do
+       (update-yaml! to-file (yaml/generate-string yaml) yaml)
+       (:yaml (get @app-db to-file))))
+   ))
 
 (comment "apply-diff test helper"
          (read-file! "sample_yaml/a.yaml")
@@ -170,6 +176,65 @@
          (apply-diff! "sample_yaml/a.yaml" "sample_yaml/c.yaml")
 
          (read-file! "sample_yaml/a.yaml")
+         (read-file! "sample_yaml/c.yaml")
+         (apply-diff "sample_yaml/a.yaml" "sample_yaml/c.yaml")
+         (apply-diff "sample_yaml/c.yaml" "sample_yaml/a.yaml")
+
+         (read-file! "sample_yaml/a.yaml")
          (read-file! "sample_yaml/b.yaml")
          (apply-diff! "sample_yaml/b.yaml" "sample_yaml/a.yaml")
+
+         (read-file! "sample_yaml/a.yaml")
+         (read-file! "sample_yaml/b.yaml")
+         (apply-diff "sample_yaml/a.yaml" "sample_yaml/b.yaml")
+         (apply-diff "sample_yaml/b.yaml" "sample_yaml/a.yaml")
 )
+
+; https://stackoverflow.com/questions/9047231/read-a-file-into-a-list-each-element-represents-one-line-of-the-file
+(defn get-lines [file]
+  (clojure.string/split-lines (slurp file))
+  )
+(defn property-to-ks [s]
+  (if (string? s)
+    (mapv #(keyword %) (clojure.string/split s #"\."))
+    nil))
+(defn property-to-kv [s]
+  (if (string? s)
+    (let
+      [i (clojure.string/index-of s "=")
+       [k v] (if (nil? i) [s nil] [(subs s 0 i) (subs s (inc i))])]
+      {:key k :ks (property-to-ks k) :val v})
+    nil))
+(defn properties-to-kvs [props] "Turns spring style properties into a format where they can be applied to a yaml map"
+  (->> props
+       (map property-to-kv)
+       (filter #((complement nil?) (:val %)))))
+
+; Assumption: Properties files will never be loaded into app-db, so we'll use slurp
+(defn apply-properties [prop-lines to-file]
+  (let [orig-yaml (if (contains? @app-db to-file)
+                        (:mapped-yaml (get @app-db to-file))
+                        {})]
+    (reduce #(assoc-in %1 (:ks %2) (:val %2)) orig-yaml (properties-to-kvs prop-lines))
+
+    (assoc-in orig-yaml (:ks (first (properties-to-kvs prop-lines))) "TESTABC")
+    (assoc-in orig-yaml [:top :properties :abc] "TESTABC")
+    ))
+(defn apply-properties! [prop-lines to-file]
+   (let [yaml (apply-properties prop-lines to-file)]
+     (do
+       (update-yaml! to-file (yaml/generate-string yaml) yaml)
+       (:yaml (get @app-db to-file))))
+   )
+
+(comment "Helpers for spring properties apply"
+         (read-file! "sample_yaml/a.yaml")
+         (read-file! "sample_yaml/c.yaml")
+         (def prop-lines (get-lines "sample_yaml/apply_from.properties"))
+         (def to-file "sample_yaml/c.yaml")
+         (def orig-yaml (if (contains? @app-db to-file)
+                          (:mapped-yaml (get @app-db to-file))
+                          {}))
+         (apply-properties prop-lines to-file)
+         (apply-properties! prop-lines to-file)
+ )
