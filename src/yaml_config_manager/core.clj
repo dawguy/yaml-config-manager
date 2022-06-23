@@ -36,7 +36,7 @@
 (defn properties-to-kvs [props] "Turns spring style properties into a format where they can be applied to a yaml map"
   (->> props
        (map property-to-kv)
-       (filter #((complement nil?) (:val %)))))
+       (remove #(nil? (:val %)))))
 
 (defn to-properties
   ([m] (to-properties [] [] m))
