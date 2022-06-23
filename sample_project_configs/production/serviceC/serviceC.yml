@@ -1,0 +1,14 @@
+serviceC:
+  name: 'Service Charlie'
+  deploymentType: 'NPE'
+featureA:
+  enabled: true
+featureB:
+  url: 'featureBURL'
+  enabled: false
+featureCFlag: true
+featureD:
+  url: 'featureDURL'
+  enabled: false
+featureRemoved:
+  enabled: true

@@ -1,0 +1,21 @@
+database:
+  username: 'databaseUser'
+  password: 'databasePassword'
+  connection:
+    url: 'databaseIP,databaseIP2'
+    port: 4567
+serviceB:
+  name: 'Service Beta'
+  special: "Only B Has This Property"
+  deploymentType: 'NPE'
+featureA:
+  enabled: true
+featureB:
+  url: 'featureBURL'
+  enabled: true
+featureCFlag: true
+featureD:
+  url: 'featureDURL'
+  enabled: true
+featureRemoved:
+  enabled: false
