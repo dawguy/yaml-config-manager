@@ -7,16 +7,20 @@
 (def re (atom {}))
 (def server (atom nil))
 
+
+
 (defn handler [request]
   (do
     (reset! re request)
     {:status 200
    :headers {"Content-Type" "application/json"}
    :body "{'response': 'woot woot'"}))
-(clojure.data.json/pprint (deref re))
+
+(defn h [request]
+  (handler request))
 
 (defn start []
-  (reset! server (run-jetty handler {:port 3000 :join? false})))
+  (reset! server (run-jetty h {:port 3000 :join? false})))
 
 (defn stop []
   (when-some [s @server]
