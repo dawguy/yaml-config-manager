@@ -30,19 +30,35 @@
                               (assoc-in [:services (:service s) (:env s) (:name s)] s)
                               )) {} (mapped-files (file-seq (clojure.java.io/file target-dir))))))
 
-(load-files! target-dir)
+(load-files! target-dir)                                    ; LOADS EVERYTHING INTO APP-DB
 
 (def env-a "staging")
 (def env-b "production")
 (def f-name "serviceA.yml")
+(def f-a (get-in @app-db [:environments env-a f-name]))
+(def f-b (get-in @app-db [:environments env-b f-name]))
+
 (defn diff [env-a env-b f-name]
   (let [f-a (get-in @app-db [:environments env-a f-name])
         f-b (get-in @app-db [:environments env-b f-name])]
   ; Read the files
   (do
-    (config/read-file! (:full-path f-a))
-    (config/read-file! (:full-path f-b)))
+    (if (complement (config/has-file? (:full-path f-a))) (config/read-file! (:full-path f-a)))
+    (if (complement (config/has-file? (:full-path f-b))) (config/read-file! (:full-path f-b)))
+  )
   ; Return the diff of the files
-  (config/diff-to-txt (config/diff [f-a f-b]))
-  ))
+  (config/diff [(:full-path f-a) (:full-path f-b)])))
+(defn diff-to-txt [env-a env-b f-name]
+  (config/diff-to-txt (diff env-a env-b f-name)))
+
 (diff "staging" "production" "serviceA.yml")
+(diff-to-txt "staging" "production" "serviceA.yml")
+
+(defn select-diffs [diffs] nil)                             ; Goal for this is to create a process which can manually select via CLI or other method.
+(defn select-diffs-with-pred [diffs pred])                  ; Goal for this is to allow a predicate to be ran across all prop-maps, and the first matching prop is returned. The most common pred should be based on environement
+(defn apply-diff [from-env to-env f-name]
+  (let [diffs (diff env-a env-b f-name)
+        selected-options ()                                 ; Gaol
+        ]
+
+  ))

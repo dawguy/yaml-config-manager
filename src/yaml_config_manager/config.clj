@@ -81,6 +81,7 @@
 (defn read-file! [f] "Reads a file and saves it to app-db"
   (if (.exists (io/file f))
       (update-yaml! f (yaml/parse-string (slurp f)))))
+(defn has-file? [f] (contains? @app-db f))
 
 (comment "Loads all yaml files used for testing purposes"
   (read-file! "sample_yaml/a.yaml")
