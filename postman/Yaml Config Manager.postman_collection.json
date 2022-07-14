@@ -1,0 +1,308 @@
+{
+	"info": {
+		"_postman_id": "de29dee2-4b8b-4816-bc2e-12ae6ca83355",
+		"name": "Yaml Config Manager",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Default",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"var1\": \"val1\",\n    \"var2\": \"val2\",\n    \"varArray\": [\n        1, 2, 3\n    ],\n    \"nestedMapParent\": {\n        \"val1\": \"child1\",\n        \"val2\": \"child2\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/test/abc",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"test",
+						"abc"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Unload-Files",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "localhost:3000/unload-files",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"unload-files"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Load-Env",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"env\": \"development\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/load-env",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"load-env"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Load-File",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"env\": \"development\",\n    \"fileName\": \"serviceA.yml\",\n    \"serviceName\": \"serviceA\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/load-file",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"load-file"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Apply-Properties-Env",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"env\": \"development\",\n    \"properties\": {\n        \"featureCFlag\": true,\n        \"featureD.url\": \"updatedURLForSpringProperties\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/apply-properties-env",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"apply-properties-env"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Apply-Properties-Env RAW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var properties_text = `",
+							"featureCFlag=true",
+							"featureD.url=updatedURLForSpringProperties",
+							"`;",
+							"",
+							"pm.globals.set(\"propertiesText\", properties_text);",
+							"pm.environment.set(\"propertiesText\", properties_text);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"env\": \"development\",\n    \"propertiesText\": \"{{propertiesText}}\"   \n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/apply-properties-env",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"apply-properties-env"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Apply-Properties-File",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"env\": \"development\",\n    \"fileName\": \"serviceA.yml\",\n    \"serviceName\": \"serviceA\",\n    \"properties\": {\n        \"featureCFlag\": true,\n        \"featureD.url\": \"updatedURLForSpringProperties\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/apply-properites-file",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"apply-properites-file"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Apply-Properties-File RAW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var properties_text = `",
+							"featureCFlag=true",
+							"featureD.url=updatedURLForSpringProperties",
+							"`;",
+							"",
+							"pm.globals.set(\"propertiesText\", properties_text);",
+							"pm.environment.set(\"propertiesText\", properties_text);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"env\": \"development\",\n    \"fileName\": \"serviceA.yml\",\n    \"serviceName\": \"serviceA\",\n    \"propertiesText\": \"{{propertiesText}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/apply-properites-file",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"apply-properites-file"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Migrate-Properties-Env",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"fromEnv\": \"development\",\n    \"toEnv\": \"staging\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/migrate-properites-env",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"migrate-properites-env"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Migrate-Properties-File",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"fromEnv\": \"development\",\n    \"fromFileName\": \"serviceA.yml\",\n    \"fromServiceName\": \"serviceA\",\n    \"toEnv\": \"staging\",\n    \"toFileName\": \"serviceA.yml\",\n    \"toServiceName\": \"serviceA\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/migrate-properites-file",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"migrate-properites-file"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
