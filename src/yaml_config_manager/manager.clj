@@ -52,8 +52,9 @@
 (defn diff-to-txt [env-a env-b f-name]
   (config/diff-to-txt (diff env-a env-b f-name)))
 
-(diff "staging" "production" "serviceA.yml")
-(diff-to-txt "staging" "production" "serviceA.yml")
+(comment "Helpers for developing diff and diff-to-txt"
+         (diff "staging" "production" "serviceA.yml")
+         (diff-to-txt "staging" "production" "serviceA.yml"))
 
 (defn select-diffs [diffs] nil)                             ; Goal for this is to create a process which can manually select via CLI or other method.
 (defn select-diffs-with-pred [diffs pred])                  ; Goal for this is to allow a predicate to be ran across all prop-maps, and the first matching prop is returned. The most common pred should be based on environement
