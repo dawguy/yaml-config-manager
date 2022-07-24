@@ -68,14 +68,14 @@
 (defn json-to-properties [props]
   (mapv #(str (first %) "=" (second %)) props)
   )
-(defn to-property-lines [body]
+(defn kv-to-spring-properties [body]
   (if (contains? body "propertiesText")
     (filterv not-empty (clojure.string/split (get body "propertiesText") #"\n"))
     (if (contains? body "properties")
       (json-to-properties (json/parse-string (get body "properties")))
       [])))
 
-(defn target-info [body]
+(defn assoc-file-paths [body]
   (-> {}
       (assoc :env (get body "env"))
       (assoc :service-name (get body "serviceName"))
@@ -90,14 +90,14 @@
    (def body {"properties" "{ \"featureCFlag\": true, \"featureD.url\": \"updatedURLForSpringProperties\" }", "env" "development", "serviceName" "serviceA", "fileName" "serviceA.yml"})
    (def props {"featureCFlag" true
                "featureD.url" "updatedURLForSpringProperties"})
-   (def property-lines (to-property-lines body))
-   (def info (target-info body))
+   (def property-lines (kv-to-spring-properties body))
+   (def info (assoc-file-paths body))
 )
 
 ; Format is target_dir/<env>/<service>/<file>.yml
 (defn unload-files [_] (reset! app-db {}))
 (defn load-f [body]
-  (let [info (target-info body)]
+  (let [info (assoc-file-paths body)]
     (do (load-files! (:file-path info))
         (let [f (get-in @app-db [:files (:file-name info) (:env info)])]
           (dissoc f :f)))))
@@ -105,13 +105,17 @@
   (do (load-files! (str target-dir "/" (get body "env")))
       (keys (get @app-db :files))))
 (defn apply-properties-file [body]
-  (let [property-lines (to-property-lines body)
-        info (target-info body)]
+  (let [property-lines (kv-to-spring-properties body)
+        info (assoc-file-paths body)]
     (do
       (prn property-lines)
       (prn info)
-      ;(config/apply-properties! property-lines (:file-path info))) ; TODO - Need to update apply-properties! to use info instead of file-path
-    )))
+      (config/apply-properties! property-lines info)) ; TODO - Need to update apply-properties! to use info instead of file-path
+    ))
 (defn apply-properties-env [body] (prn body))
 (defn migrate-properties-file [body] (prn body))
 (defn migrate-properties-env [body] (prn body))
+(defn save-app-db [_] (let [db (deref config/app-db)]
+                       (for [f db] (do
+                          (prn (str f " " db))
+                          (config/write-file! (first f) (second f))))))

@@ -23,6 +23,7 @@
     "apply-properties-env" m/apply-properties-env
     "migrate-properties-file" m/migrate-properties-file
     "migrate-properties-env" m/migrate-properties-env
+    "save-app-db" m/save-app-db
     not-found
     )))
 

@@ -1,5 +1,6 @@
 (ns yaml-config-manager.config
   (:require [clj-yaml.core :as yaml]
+            [flatland.ordered.map :refer (ordered-map)]
             [clojure.java.io :as io])
   )
 
@@ -76,17 +77,19 @@
   (convert-to-properties c-parsed)
 )
 
-(defn update-yaml! [f yaml] "Updates app-db with the yaml map"
-  (swap! app-db assoc f yaml))
-(defn read-file! [f] "Reads a file and saves it to app-db"
-  (if (.exists (io/file f))
-      (update-yaml! f (yaml/parse-string (slurp f)))))
-(defn has-file? [f] (contains? @app-db f))
+(defn update-yaml! [f-name yaml] "Updates app-db with the yaml map"
+  (prn (str "Update yaml! called for file " f-name " and yaml " yaml))
+  (swap! app-db assoc f-name yaml))
+(defn read-file! [f-name] "Reads a file and saves it to app-db"
+  (if (.exists (io/file f-name))
+      (update-yaml! f-name (yaml/parse-string (slurp f-name)))))
+(defn has-file? [f-name] (contains? @app-db f-name))
 
 (comment "Loads all yaml files used for testing purposes"
   (read-file! "sample_yaml/a.yaml")
   (read-file! "sample_yaml/b.yaml")
   (read-file! "sample_yaml/c.yaml")
+  (read-file! "./sample_project_configs/development/serviceA/serviceA.yml")
   (read-file! "sample_yaml/non_existant.yaml")
 )
 
@@ -179,16 +182,21 @@
 )
 
 ; Assumption: Properties files will never be loaded into app-db, so we'll use slurp
-(defn apply-properties [prop-lines to-file]
-  (let [orig-yaml (if (contains? @app-db to-file)
-                        (get @app-db to-file)
-                        {})]
+(defn apply-properties [prop-lines file-info]
+  (let [orig-yaml (if (contains? file-info :yaml)
+                    (:yaml file-info)
+                    (if (contains? @app-db (:file-path file-info))
+                      (get @app-db (:fil-path file-info))
+                      {}))]
     (reduce #(assoc-in %1 (:ks %2) (:val %2)) orig-yaml (properties-to-kvs prop-lines))))
-(defn apply-properties! [prop-lines to-file]
-   (let [yaml (apply-properties prop-lines to-file)]
+(defn apply-properties! [prop-lines file-info]
+   (let [yaml (apply-properties prop-lines file-info)]
      (do
-       (update-yaml! to-file yaml)
-       (get @app-db to-file))))
+       (update-yaml! (:file-path file-info) yaml)
+       (get @app-db (:file-path file-info)))))
+
+(defn write-file! [file-name data] (spit file-name (yaml/generate-string data :dumper-options {:flow-style :block
+                                                                                               :indent 2})))
 
 (comment "Helpers for spring properties apply"
          (read-file! "sample_yaml/a.yaml")
@@ -198,6 +206,9 @@
          (def orig-yaml (if (contains? @app-db to-file)
                           (get @app-db to-file)
                           {}))
-         (apply-properties prop-lines to-file)
-         (apply-properties! prop-lines to-file)
+         (def file-info {:env "development", :service-name "serviceA", :file-name "serviceA.yml", :file-path "./sample_project_configs/development/serviceA/serviceA.yml", :env-path "./sample_project_configs/development"})
+         (apply-properties prop-lines file-info)
+         (apply-properties! prop-lines file-info)
+         (def data  {:featureCFlag "true", :featureD {:url "updatedURLForSpringProperties"}})
+         (def data (ordered-map :a (ordered-map :a 1) :b (ordered-map :b 2)))
  )
