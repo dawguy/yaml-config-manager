@@ -1,43 +1,75 @@
 (ns yaml-config-manager.manager
-  (:require [clojure.tools.namespace.file :as ns-file]
-             [yaml-config-manager.config :as config]
-            [cheshire.core :as json]))
+  (:require [clj-yaml.core :as yaml]
+            [clojure.tools.namespace.file :as ns-file]
+            [yaml-config-manager.config :as config]
+            [clojure.java.io :as io]
+            [cheshire.core :as json])
+
+  (:import (java.io File))
+  )
 
 ; This one is gonna be a bit specific to our sample_project_configs directory, but that's okay
 (use 'yaml-config-manager.manager :reload-all)
 
-(def target-dir ".")
-(def target-dir "./sample_project_configs")
 (defonce app-db (atom {}))
+(def target-dir "./sample_project_configs/")
 
-(defn file-path [f]
+(comment "Helper values for development of file reading features"
+  (def target-dir ".")
+  (def target-dir "./sample_project_configs/")
+
+  (def f "./sample_project_configs/development/serviceA/serviceA.yml")
+  (def f (io/file "./sample_project_configs/development/serviceA/serviceA.yml"))
+  (def f (io/file "./sample_project_configs/development/MissingService/MissingService.yml"))
+  (def m {:TMP "val"})
+)
+
+(defn read-file [f] "Reads a yaml file"
+  (if (.exists f)
+    (yaml/parse-string (slurp f))))
+(defn assoc-file-path-info [m f]
   (let [service-f (.getParentFile f)
         env-f (if (nil? f) nil (.getParentFile service-f))]
-    {
-     :name      (.getName f)
-     :service   (if (nil? service-f) nil (.getName service-f))
-     :env       (if (nil? env-f) nil (.getName env-f))
-     :full-path (.getPath f)
-     :f f
-     }))
+    (-> m
+        (assoc :name (.getName f))
+        (assoc :service (if (nil? service-f) nil (.getName service-f)))
+        (assoc :env (if (nil? env-f) nil (.getName env-f)))
+        (assoc :full-path (.getPath f))
+        (assoc :f f)
+        (assoc :exists (.exists f)))))
+(defn assoc-yaml-info [m f]
+  (assoc m :yaml (read-file f)))
+
 (defn is-yaml? [f] (ns-file/file-with-extension? f ["yaml" "yml"]))
-(defn mapped-files [fs] (map file-path (filter #(is-yaml? %) fs)))
 
-(defn load-files! [target-dir]
-  (reset! app-db (reduce (fn [m s]
-                          (-> m
-                              (assoc-in [:files (:name s) (:env s)] s)
-                              (assoc-in [:environments (:env s) (:name s)] s)
-                              (assoc-in [:services (:service s) (:env s) (:name s)] s)
-                              )) {} (mapped-files (file-seq (clojure.java.io/file target-dir))))))
+(comment "helpers for parsing files into app-db"
+  (def f (io/file "sample_yaml/a.yaml"))
+  (def f (io/file (str target-dir "development/serviceA/serviceA.yml")))
+)
 
-;(load-files! target-dir)                                    ; LOADS EVERYTHING INTO APP-DB
-
-(def env-a "staging")
-(def env-b "production")
-(def f-name "serviceA.yml")
-(def f-a (get-in @app-db [:environments env-a f-name]))
-(def f-b (get-in @app-db [:environments env-b f-name]))
+(defn assoc-to-db [db file-info]
+  (-> db
+      (assoc-in [:files (:name file-info) (:env file-info)] file-info)
+      (assoc-in [:environments (:env file-info) (:name file-info)] file-info)
+      (assoc-in [:services (:service file-info) (:env file-info) (:name file-info)] file-info)
+      (assoc-in [:paths (:full-path file-info)] file-info)))
+(defn load-file!
+  [^File f] "Loads a file based on file name and adds info for them"
+  (let [file-info (-> {}
+                      (assoc-file-path-info f)
+                      (assoc-yaml-info f))]
+    (if (:exists file-info)
+      (swap! app-db assoc-to-db file-info)
+      file-info)))
+(defn find-yaml-files [target-dir]
+  (->> (clojure.java.io/file target-dir)
+      (file-seq)
+      (filter #(is-yaml? %))
+    ))
+(defn load-files! []
+  (let [yaml-files (find-yaml-files target-dir)]
+    (for [f yaml-files]
+      (load-file! f))))
 
 (defn diff [env-a env-b f-name]
   (let [f-a (get-in @app-db [:environments env-a f-name])
@@ -56,24 +88,14 @@
          (diff "staging" "production" "serviceA.yml")
          (diff-to-txt "staging" "production" "serviceA.yml"))
 
-(defn select-diffs [diffs] nil)                             ; Goal for this is to create a process which can manually select via CLI or other method.
-(defn select-diffs-with-pred [diffs pred])                  ; Goal for this is to allow a predicate to be ran across all prop-maps, and the first matching prop is returned. The most common pred should be based on environement
-(defn apply-diff [from-env to-env f-name]
-  (let [diffs (diff env-a env-b f-name)
-        selected-options ()                                 ; Gaol
-        ]
-
-  ))
-
 (defn json-to-properties [props]
   (mapv #(str (first %) "=" (second %)) props)
   )
 (defn kv-to-spring-properties [body]
-  (if (contains? body "propertiesText")
-    (filterv not-empty (clojure.string/split (get body "propertiesText") #"\n"))
-    (if (contains? body "properties")
-      (json-to-properties (json/parse-string (get body "properties")))
-      [])))
+  (condp #(contains? %2 %1) body
+    "propertiesText" (filterv not-empty (clojure.string/split (get body "propertiesText") #"\n"))
+    "properties" (json-to-properties (json/parse-string (get body "properties")))
+    []))
 
 (defn assoc-file-paths [body]
   (-> {}
@@ -87,7 +109,7 @@
    (def service-name "serviceA")
    (def env "development")
    (def body {"propertiesText" "\nfeatureCFlag=true\nfeatureD.url=updatedURLForSpringProperties\n", "env" "development", "serviceName" "serviceA", "fileName" "serviceA.yml"})
-   (def body {"properties" "{ \"featureCFlag\": true, \"featureD.url\": \"updatedURLForSpringProperties\" }", "env" "development", "serviceName" "serviceA", "fileName" "serviceA.yml"})
+   (def body {"properties" "{ \"featureCFlag\": true, \"featureD.url\": \"updatedURLForSpringPropertiesAA\" }", "env" "development", "serviceName" "serviceA", "fileName" "serviceA.yml"})
    (def props {"featureCFlag" true
                "featureD.url" "updatedURLForSpringProperties"})
    (def property-lines (kv-to-spring-properties body))
@@ -95,27 +117,13 @@
 )
 
 ; Format is target_dir/<env>/<service>/<file>.yml
-(defn unload-files [_] (reset! app-db {}))
-(defn load-f [body]
-  (let [info (assoc-file-paths body)]
-    (do (load-files! (:file-path info))
-        (let [f (get-in @app-db [:files (:file-name info) (:env info)])]
-          (dissoc f :f)))))
-(defn load-env [body]
-  (do (load-files! (str target-dir "/" (get body "env")))
-      (keys (get @app-db :files))))
 (defn apply-properties-file [body]
   (let [property-lines (kv-to-spring-properties body)
         info (assoc-file-paths body)]
-    (do
-      (prn property-lines)
-      (prn info)
-      (config/apply-properties! property-lines info)) ; TODO - Need to update apply-properties! to use info instead of file-path
-    ))
+    (prn (str property-lines " " info))
+      (config/apply-properties! property-lines info)))
 (defn apply-properties-env [body] (prn body))
 (defn migrate-properties-file [body] (prn body))
 (defn migrate-properties-env [body] (prn body))
 (defn save-app-db [_] (let [db (deref config/app-db)]
-                       (for [f db] (do
-                          (prn (str f " " db))
-                          (config/write-file! (first f) (second f))))))
+                       (for [f db] (config/write-file! (first f) (second f)))))

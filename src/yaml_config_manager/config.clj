@@ -5,15 +5,6 @@
   )
 
 (use 'yaml-config-manager.config :reload-all)
-; Something to note is that clj-yaml uses flatland ordered maps behind the scenes
-(comment "Helper definitions for development"
-  (def a-yaml (slurp "sample_yaml/a.yaml"))
-  (def b-yaml (slurp "sample_yaml/b.yaml"))
-  (def c-yaml (slurp "sample_yaml/c.yaml"))
-  (def a-parsed (yaml/parse-string a-yaml))
-  (def b-parsed (yaml/parse-string b-yaml))
-  (def c-parsed (yaml/parse-string c-yaml))
-)
 
 (def app-db (atom {}) )
 (defn reset-db! [] (reset! app-db {}))
@@ -82,7 +73,7 @@
   (swap! app-db assoc f-name yaml))
 (defn read-file! [f-name] "Reads a file and saves it to app-db"
   (if (.exists (io/file f-name))
-      (update-yaml! f-name (yaml/parse-string (slurp f-name)))))
+    (update-yaml! f-name (yaml/parse-string (slurp f-name)))))
 (defn has-file? [f-name] (contains? @app-db f-name))
 
 (comment "Loads all yaml files used for testing purposes"

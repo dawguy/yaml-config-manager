@@ -16,9 +16,6 @@
 (defn router [uri body]
 (let [target (last (clojure.string/split uri #"/"))]
   (case target
-    "unload-files" m/unload-files
-    "load-file" m/load-f
-    "load-env" m/load-env
     "apply-properties-file" m/apply-properties-file
     "apply-properties-env" m/apply-properties-env
     "migrate-properties-file" m/migrate-properties-file
