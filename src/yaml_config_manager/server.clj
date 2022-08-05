@@ -6,7 +6,7 @@
             [yaml-config-manager.manager :as m]
             ))
 
-(use 'yaml-config-manager.server :reload-all)
+;(use 'yaml-config-manager.server :reload-all)
 
 (def re (atom {}))
 (def re-body (atom {}))
@@ -20,7 +20,6 @@
     "apply-properties-env" m/apply-properties-env
     "migrate-properties-file" m/migrate-properties-file
     "migrate-properties-env" m/migrate-properties-env
-    "save-app-db" m/save-app-db
     not-found
     )))
 

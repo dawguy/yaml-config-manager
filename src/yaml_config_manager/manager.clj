@@ -17,6 +17,8 @@
 (defn read-file [f] "Reads a yaml file"
   (if (.exists f)
     (yaml/parse-string (slurp f))))
+(defn write-file! [file-name data] (spit file-name (yaml/generate-string data :dumper-options {:flow-style :block
+                                                                                               :indent 2})))
 (defn assoc-file-path-info [m f]
   (let [service-f (.getParentFile f)
         env-f (if (nil? f) nil (.getParentFile service-f))]
@@ -28,7 +30,9 @@
         (assoc :f f)
         (assoc :exists (.exists f)))))
 (defn assoc-yaml-info [m f]
-  (assoc m :yaml (read-file f)))
+  (let [yaml (read-file f)]
+    (-> m
+      (assoc :yaml yaml))))
 
 (defn is-yaml? [f] (ns-file/file-with-extension? f ["yaml" "yml"]))
 
@@ -56,23 +60,22 @@
     (for [f yaml-files]
       (load-file! f))))
 
+(comment "Helpers for developing diff and diff-to-txt"
+         (diff "staging" "production" "serviceA.yml")
+         (diff-to-txt "staging" "production" "serviceA.yml")
+)
 (defn diff [env-a env-b f-name]
   (let [f-a (get-in @app-db [:environments env-a f-name])
         f-b (get-in @app-db [:environments env-b f-name])]
-  ; Read the files
-  (do
-    (if (complement (config/has-file? (:full-path f-a))) (config/read-file! (:full-path f-a)))
-    (if (complement (config/has-file? (:full-path f-b))) (config/read-file! (:full-path f-b)))
-  )
   ; Return the diff of the files
-  (config/diff [(:full-path f-a) (:full-path f-b)])))
+  (config/diff [f-a f-b])))
 (defn diff-to-txt [env-a env-b f-name]
   (config/diff-to-txt (diff env-a env-b f-name)))
 
 (defn json-to-properties [props]
   (mapv #(str (first %) "=" (second %)) props)
   )
-(defn kv-to-spring-properties [body]
+(defn- kv-to-spring-properties [body]
   (condp #(contains? %2 %1) body
     "propertiesText" (filterv not-empty (clojure.string/split (get body "propertiesText") #"\n"))
     "properties" (json-to-properties (json/parse-string (get body "properties")))
@@ -91,35 +94,31 @@
   (let [property-lines (kv-to-spring-properties body)
         info (assoc-file-paths body)]
     (prn (str property-lines " " info))
-      (config/apply-properties! property-lines info)))
+      ;(config/apply-properties property-lines info)
+    ))
 (defn apply-properties-env [body] (prn body))
 (defn migrate-properties-file [body] (prn body))
 (defn migrate-properties-env [body] (prn body))
-(defn save-app-db [_] (let [db (deref config/app-db)]
-                       (for [f db] (config/write-file! (first f) (second f)))))
+
+(load-files!)
 
 (comment "helpers for parsing files into app-db"
-         (def f (io/file "sample_yaml/a.yaml"))
-         (def f (io/file (str target-dir "development/serviceA/serviceA.yml")))
-         )
-(comment "Helpers for developing diff and diff-to-txt"
-         (diff "staging" "production" "serviceA.yml")
-         (diff-to-txt "staging" "production" "serviceA.yml"))
-(comment "Helper values for development of file reading features"
-         (def target-dir ".")
-         (def target-dir "./sample_project_configs/")
+  (def f (io/file "sample_yaml/a.yaml"))
+  (def f (io/file (str target-dir "development/serviceA/serviceA.yml")))
+)
 
-         (def f "./sample_project_configs/development/serviceA/serviceA.yml")
-         (def f (io/file "./sample_project_configs/development/serviceA/serviceA.yml"))
-         (def f (io/file "./sample_project_configs/development/MissingService/MissingService.yml"))
-         (def m {:TMP "val"})
-         )
+(comment "Helper values for development of file reading features"
+  (def target-dir ".")
+  (def target-dir "./sample_project_configs/")
+  (def m {:TMP "val"})
+)
 (comment "Helper defs for development"
-         (def service-name "serviceA")
-         (def env "development")
-         (def body {"propertiesText" "\nfeatureCFlag=true\nfeatureD.url=updatedURLForSpringProperties\n", "env" "development", "serviceName" "serviceA", "fileName" "serviceA.yml"})
-         (def body {"properties" "{ \"featureCFlag\": true, \"featureD.url\": \"updatedURLForSpringPropertiesAA\" }", "env" "development", "serviceName" "serviceA", "fileName" "serviceA.yml"})
-         (def props {"featureCFlag" true
-                     "featureD.url" "updatedURLForSpringProperties"})
-         (def property-lines (kv-to-spring-properties body))
-         (def info (assoc-file-paths body)))
+  (def service-name "serviceA")
+  (def env "development")
+  (def body {"propertiesText" "\nfeatureCFlag=true\nfeatureD.url=updatedURLForSpringProperties\n", "env" "development", "serviceName" "serviceA", "fileName" "serviceA.yml"})
+  (def body {"properties" "{ \"featureCFlag\": true, \"featureD.url\": \"updatedURLForSpringPropertiesAA\" }", "env" "development", "serviceName" "serviceA", "fileName" "serviceA.yml"})
+  (def props {"featureCFlag" true
+              "featureD.url" "updatedURLForSpringProperties"})
+  (def property-lines (kv-to-spring-properties body))
+  (def info (assoc-file-paths body))
+)
