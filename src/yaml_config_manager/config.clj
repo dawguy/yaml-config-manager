@@ -38,7 +38,7 @@
 
 (defn to-prop-name [ks] "Takes a key structure. Returns the spring properties that would be associated with it"
   (clojure.string/join "." (map name ks)))
-(defn assoc-property-data [m ks ps]
+(defn assoc-property-data [m ks ps] "Attach :prop (springified ps), :ks ks, and :val ps to the map"
   (-> m
       (assoc :prop (to-prop-name ks))
       (assoc :ks ks)
@@ -61,9 +61,7 @@
           f files-set]
       (if (get-in lookup-table [p f])
         (get-in lookup-table [p f])
-        (do
-          (prn "NILLL")
-          {:prop p, :ks (property-to-ks p) :val nil, :full-path f})))))
+          {:prop p, :ks (property-to-ks p) :val nil, :full-path f}))))
 
 (comment
   (def development-file-info {:name "serviceA.yml", :service "serviceA", :env "development", :full-path "./sample_project_configs/development/serviceA/serviceA.yml", :exists true, :yaml (ordered-map :database (ordered-map :username "databaseUser" :password "databasePassword" :connection (ordered-map :url "databaseIP,databaseIP2" :port 4567)) :serviceA (ordered-map :name "Service Alpha" :deploymentType "NPE") :featureA (ordered-map :enabled true) :featureB (ordered-map :url "featureBURL" :enabled true) :featureCFlag false :featureD (ordered-map :url "featureDURL" :enabled true))})
@@ -112,12 +110,13 @@
          (def selected-prop-b {:prop "serviceB.deploymentType", :ks [:serviceB :deploymentType], :val "PROD-B", :full-path "./sample_project_configs/production/serviceB/serviceB.yml"})
          (def selected-props [selected-prop selected-prop-b])
          )
-(defn assoc-updated-prop [file-info selected-prop] "Updates the yaml of a file-info to include the value from the selected-prop"
+(defn assoc-updated-prop [file-info selected-prop] "Updates the yaml of a file-info to include the value from the selected-prop
+                                                    Something for the future could be to allow functions for val (or some other way to do values based on serviceName)"
   (if (nil? (:val selected-prop))
-    (assoc file-info :yaml (dissoc-in (:yaml file-info) (:ks selected-prop)))
+    (dissoc-in file-info (cons :yaml (:ks selected-prop)))
     (assoc-in file-info (cons :yaml (:ks selected-prop)) (:val selected-prop))))
 (defn assoc-selected-props [file-info selected-props]
-    (reduce #(assoc-updated-prop % %2) file-info selected-props))
+    (reduce #(assoc-updated-prop %1 %2) file-info selected-props))
 
 (comment "Helpers for spring properties apply"
          (def prop-lines (get-lines "sample_yaml/apply_from.properties"))

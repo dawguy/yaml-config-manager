@@ -12,7 +12,7 @@
 (use 'yaml-config-manager.manager :reload-all)
 
 (defonce app-db (atom {}))
-(def target-dir "./sample_project_configs/")
+(def target-dir "./sample_project_configs")
 
 (defn read-file [f] "Reads a yaml file"
   (if (.exists f)
@@ -36,12 +36,19 @@
 
 (defn is-yaml? [f] (ns-file/file-with-extension? f ["yaml" "yml"]))
 
-(defn assoc-to-db [db file-info]
+(defn assoc-to-db [db file-info] "Assocs the file-info multiple places in @app-db"
   (-> db
       (assoc-in [:files (:name file-info) (:env file-info)] file-info)
       (assoc-in [:environments (:env file-info) (:name file-info)] file-info)
       (assoc-in [:services (:service file-info) (:env file-info) (:name file-info)] file-info)
       (assoc-in [:paths (:full-path file-info)] file-info)))
+
+
+(comment "helpers for parsing files into app-db"
+  (def f (io/file "sample_yaml/a.yaml"))
+  (def f (io/file (str target-dir "development/serviceA/serviceA.yml")))
+  (load-file! f)
+)
 (defn load-file!
   [^File f] "Loads a file based on file name and adds info for them"
   (let [file-info (-> {}
@@ -89,36 +96,42 @@
       (#(assoc % :file-path (str target-dir "/" (:env %) "/" (:service-name %) "/" (:file-name %))))
       (#(assoc % :env-path (str target-dir "/" (:env %))))))
 
-; Format is target_dir/<env>/<service>/<file>.yml
-(defn apply-properties-file [body]
-  (let [property-lines (kv-to-spring-properties body)
-        info (assoc-file-paths body)]
-    (prn (str property-lines " " info))
-      ;(config/apply-properties property-lines info)
-    ))
-(defn apply-properties-env [body] (prn body))
-(defn migrate-properties-file [body] (prn body))
-(defn migrate-properties-env [body] (prn body))
-
-(load-files!)
-
-(comment "helpers for parsing files into app-db"
-  (def f (io/file "sample_yaml/a.yaml"))
-  (def f (io/file (str target-dir "development/serviceA/serviceA.yml")))
-)
-
-(comment "Helper values for development of file reading features"
-  (def target-dir ".")
-  (def target-dir "./sample_project_configs/")
-  (def m {:TMP "val"})
-)
-(comment "Helper defs for development"
+(comment "Helper defs applying properties via postman"
   (def service-name "serviceA")
   (def env "development")
   (def body {"propertiesText" "\nfeatureCFlag=true\nfeatureD.url=updatedURLForSpringProperties\n", "env" "development", "serviceName" "serviceA", "fileName" "serviceA.yml"})
   (def body {"properties" "{ \"featureCFlag\": true, \"featureD.url\": \"updatedURLForSpringPropertiesAA\" }", "env" "development", "serviceName" "serviceA", "fileName" "serviceA.yml"})
   (def props {"featureCFlag" true
               "featureD.url" "updatedURLForSpringProperties"})
-  (def property-lines (kv-to-spring-properties body))
+  (def selected-props (map config/property-to-kv (kv-to-spring-properties body)))
+  (def file-info (get-in @app-db [:paths "./sample_project_configs/development/serviceA/serviceA.yml"]))
   (def info (assoc-file-paths body))
+)
+; Format is target_dir/<env>/<service>/<file>.yml
+(defn apply-properties-file [body]
+  (let [selected-props (map config/property-to-kv (kv-to-spring-properties body))
+        body-parsed (assoc-file-paths body)
+        file-info (get-in @app-db [:paths (:file-path body-parsed)])]
+      (config/assoc-selected-props file-info selected-props)
+    ))
+
+(comment "Helpers for grabbing all files from a particular environment"
+         (def body {"propertiesText" "\nfeatureCFlag=AAAAAAAAA\nfeatureD.url=updatedURLForSpringProperties\n", "env" "development"})
+         (def selected-props (map config/property-to-kv (kv-to-spring-properties body)))
+         (def body-parsed (assoc-file-paths body))
+)
+(defn apply-properties-env [body]
+  (let [selected-props (map config/property-to-kv (kv-to-spring-properties body))
+        body-parsed (assoc-file-paths body)
+        file-infos (vals (get-in @app-db [:environments (:env body-parsed)]))]
+    (map #(config/assoc-selected-props % selected-props) file-infos)))
+(defn migrate-properties-file [body] (prn body))
+(defn migrate-properties-env [body] (prn body))
+
+(load-files!)
+
+(comment "Helper values for development of file reading features"
+  (def target-dir ".")
+  (def target-dir "./sample_project_configs")
+  (def m {:TMP "val"})
 )
