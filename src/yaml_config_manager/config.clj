@@ -1,5 +1,6 @@
 (ns yaml-config-manager.config
-  (:require [flatland.ordered.map :refer (ordered-map)])
+  (:require [flatland.ordered.map :refer (ordered-map)]
+            [clojure.core.incubator :refer (dissoc-in)])
 )
 
 (use 'yaml-config-manager.config :reload-all)
@@ -102,11 +103,21 @@
 (defn readable-diff [file-infos]
     (diff-to-txt (diff file-infos)))
 
-(comment [] "Helpers for debugging convert-to-properties"
-         (assoc-yaml-as-spring-properties a-parsed)
-         (assoc-yaml-as-spring-properties b-parsed)
-         (assoc-yaml-as-spring-properties c-parsed)
+(comment "Helpers showing shape of file-info and selected-prop"
+         (def development-file-info {:name "serviceA.yml", :service "serviceA", :env "development", :full-path "./sample_project_configs/development/serviceA/serviceA.yml", :exists true, :yaml (ordered-map :database (ordered-map :username "databaseUser" :password "databasePassword" :connection (ordered-map :url "databaseIP,databaseIP2" :port 4567)) :serviceA (ordered-map :name "Service Alpha" :deploymentType "NPE") :featureA (ordered-map :enabled true) :featureB (ordered-map :url "featureBURL" :enabled true) :featureCFlag false :featureD (ordered-map :url "featureDURL" :enabled true))})
+         (def prod-file-info {:name "serviceA.yml", :service "serviceA", :env "production", :full-path "./sample_project_configs/production/serviceA/serviceA.yml", :exists true, :yaml (ordered-map :database (ordered-map :username "databaseUser" :password "databasePassword" :connection (ordered-map :url "databaseIP,databaseIP2" :port 4567)) :serviceA (ordered-map :name "Service Alpha" :deploymentType "PROD") :featureA (ordered-map :enabled true) :featureB (ordered-map :url "featureBURL" :enabled false) :featureCFlag true :featureD (ordered-map :url "featureDURL" :enabled false) :featureRemoved (ordered-map :enabled true))})
+         (def file-info development-file-info)
+         (def selected-prop {:prop "serviceA.deploymentType", :ks [:serviceA :deploymentType], :val "PROD", :full-path "./sample_project_configs/production/serviceA/serviceA.yml"})
+         (def selected-prop {:prop "serviceA.deploymentType", :ks [:serviceA :deploymentType], :val nil, :full-path "./sample_project_configs/production/serviceA/serviceA.yml"})
+         (def selected-prop-b {:prop "serviceB.deploymentType", :ks [:serviceB :deploymentType], :val "PROD-B", :full-path "./sample_project_configs/production/serviceB/serviceB.yml"})
+         (def selected-props [selected-prop selected-prop-b])
          )
+(defn assoc-updated-prop [file-info selected-prop] "Updates the yaml of a file-info to include the value from the selected-prop"
+  (if (nil? (:val selected-prop))
+    (assoc file-info :yaml (dissoc-in (:yaml file-info) (:ks selected-prop)))
+    (assoc-in file-info (cons :yaml (:ks selected-prop)) (:val selected-prop))))
+(defn assoc-selected-props [file-info selected-props]
+    (reduce #(assoc-updated-prop % %2) file-info selected-props))
 
 (comment "Helpers for spring properties apply"
          (def prop-lines (get-lines "sample_yaml/apply_from.properties"))
@@ -114,10 +125,3 @@
          (def data  {:featureCFlag "true", :featureD {:url "updatedURLForSpringProperties"}})
          (def data (ordered-map :a (ordered-map :a 1) :b (ordered-map :b 2)))
  )
-
-(comment "Turns a parsed yaml map into a format which lists all keys next to the value"
-         (yaml-to-kvs a-parsed)
-         (yaml-to-kvs b-parsed)
-         (yaml-to-kvs c-parsed)
-         (yaml-to-kvs {:a {:b 2 :c {:d 3 :e 4}}})
-         )
