@@ -19,6 +19,9 @@
     (yaml/parse-string (slurp f))))
 (defn write-file! [file-name data] (spit file-name (yaml/generate-string data :dumper-options {:flow-style :block
                                                                                                :indent 2})))
+(defn save-file-info! [file-info]
+  (write-file! (:full-path file-info) (:yaml file-info)))
+
 (defn assoc-file-path-info [m f]
   (let [service-f (.getParentFile f)
         env-f (if (nil? f) nil (.getParentFile service-f))]
@@ -43,7 +46,6 @@
       (assoc-in [:services (:service file-info) (:env file-info) (:name file-info)] file-info)
       (assoc-in [:paths (:full-path file-info)] file-info)))
 
-
 (comment "helpers for parsing files into app-db"
   (def f (io/file "sample_yaml/a.yaml"))
   (def f (io/file (str target-dir "development/serviceA/serviceA.yml")))
@@ -62,10 +64,12 @@
       (file-seq)
       (filter #(is-yaml? %))
     ))
-(defn load-files! []
-  (let [yaml-files (find-yaml-files target-dir)]
-    (for [f yaml-files]
-      (load-file! f))))
+(defn load-files!
+  ([] (load-files! target-dir))
+  ([target-dir]
+   (let [yaml-files (find-yaml-files target-dir)]
+     (for [f yaml-files]
+       (load-file! f)))))
 
 (comment "Helpers for developing diff and diff-to-txt"
          (diff "staging" "production" "serviceA.yml")
@@ -117,6 +121,7 @@
 
 (comment "Helpers for grabbing all files from a particular environment"
          (def body {"propertiesText" "\nfeatureCFlag=AAAAAAAAA\nfeatureD.url=updatedURLForSpringProperties\n", "env" "development"})
+         (def b body)
          (def selected-props (map config/property-to-kv (kv-to-spring-properties body)))
          (def body-parsed (assoc-file-paths body))
 )
