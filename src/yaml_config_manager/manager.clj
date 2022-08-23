@@ -68,8 +68,8 @@
   ([] (load-files! target-dir))
   ([target-dir]
    (let [yaml-files (find-yaml-files target-dir)]
-     (for [f yaml-files]
-       (load-file! f)))))
+     (vec (for [f yaml-files] ; Note: vec is required to realize the lazy-seq for side-effects
+            (load-file! f))))))
 
 (comment "Helpers for developing diff and diff-to-txt"
          (diff "staging" "production" "serviceA.yml")

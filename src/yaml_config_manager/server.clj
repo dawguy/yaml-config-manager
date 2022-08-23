@@ -17,6 +17,8 @@
   (if (empty? wrappers)
     m
     ((first wrappers) m (rest wrappers))))
+(defn wrapper-force-success [file-info wrappers]
+  (apply-rem-wrappers {:code 200, :message "Success"} wrappers))
 (defn wrapper-apply-tar-fun [tar-fun]
   (fn [m wrappers] (apply-rem-wrappers (tar-fun m) wrappers))
   )
@@ -37,11 +39,7 @@
 (defn router [uri body]
 (let [target (last (clojure.string/split uri #"/"))]
   (case target
-    ; What I want to do next.
-    ; Turn the formatting functions into separate wrapping functions.
-    ; Add saving as a wrapping function.
-    ; :f stripping as a wrapping function.;
-    ; These routers should just return a file-info by default.
+    "load-files" [(fn [_] (m/load-files!)) [wrapper-force-success]]
     "apply-properties-file" [m/apply-properties-file [wrapper-save-file wrapper-to-yaml]]
     "apply-properties-env" [m/apply-properties-env [wrapper-handle-multiple wrapper-save-file wrapper-include-service]]
     "migrate-properties-file" [m/migrate-properties-file [wrapper-to-yaml]]

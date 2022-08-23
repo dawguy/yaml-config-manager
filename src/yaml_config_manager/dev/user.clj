@@ -8,6 +8,7 @@
     (prn "nREPL Server started")
     (yaml-config-manager.server/start)
     (prn "Server started")
+    (yaml-config-manager.manager/load-files!)
   )
 
 (defn -main []
