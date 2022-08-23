@@ -55,13 +55,13 @@
 			"response": []
 		},
 		{
-			"name": "Load-Env",
+			"name": "Load Files",
 			"request": {
 				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"env\": \"development\"\n}",
+					"raw": "{\n    \"body\": \"\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -69,40 +69,13 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:3000/load-env",
+					"raw": "localhost:3000/load-files",
 					"host": [
 						"localhost"
 					],
 					"port": "3000",
 					"path": [
-						"load-env"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Load-File",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"env\": \"development\",\n    \"fileName\": \"serviceA.yml\",\n    \"serviceName\": \"serviceA\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "localhost:3000/load-file",
-					"host": [
-						"localhost"
-					],
-					"port": "3000",
-					"path": [
-						"load-file"
+						"load-files"
 					]
 				}
 			},
@@ -137,29 +110,12 @@
 		},
 		{
 			"name": "Apply-Properties-Env RAW",
-			"event": [
-				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							"var properties_text = `",
-							"featureCFlag=true",
-							"featureD.url=updatedURLForSpringProperties",
-							"`;",
-							"",
-							"pm.globals.set(\"propertiesText\", properties_text);",
-							"pm.environment.set(\"propertiesText\", properties_text);"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
 			"request": {
 				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"env\": \"development\",\n    \"propertiesText\": \"{{propertiesText}}\"   \n}",
+					"raw": "{\n    \"env\": \"development\",\n    \"propertiesText\": \"{{propertiesText}}\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -265,13 +221,13 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:3000/migrate-properties-env",
+					"raw": "localhost:3000/migrate-properites-env",
 					"host": [
 						"localhost"
 					],
 					"port": "3000",
 					"path": [
-						"migrate-properties-env"
+						"migrate-properites-env"
 					]
 				}
 			},
@@ -292,13 +248,13 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:3000/migrate-properties-file",
+					"raw": "localhost:3000/migrate-properites-file",
 					"host": [
 						"localhost"
 					],
 					"port": "3000",
 					"path": [
-						"migrate-properties-file"
+						"migrate-properites-file"
 					]
 				}
 			},
