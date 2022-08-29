@@ -92,13 +92,22 @@
     "properties" (json-to-properties (json/parse-string (get body "properties")))
     []))
 
-(defn assoc-file-paths [body]
+(defn assoc-file-info [m]
   (-> {}
-      (assoc :env (get body "env"))
-      (assoc :service-name (get body "serviceName"))
-      (assoc :file-name (get body "fileName"))
+      (assoc :env (get m "env"))
+      (assoc :service-name (get m "serviceName"))
+      (assoc :file-name (get m "fileName"))
       (#(assoc % :file-path (str target-dir "/" (:env %) "/" (:service-name %) "/" (:file-name %))))
-      (#(assoc % :env-path (str target-dir "/" (:env %))))))
+      (#(assoc % :env-path (str target-dir "/" (:env %)))))
+)
+(defn assoc-file-paths [body]
+  (do
+    (prn body)
+    (cond
+      (contains? body "paths") (map assoc-file-info (get body "paths"))
+      (contains? body "toFile") [(assoc-file-info (get body "toFile" {}))
+                                  (assoc-file-info (get body "fromFile" {}))]
+      :else (assoc-file-info body))))
 
 (comment "Helper defs applying properties via postman"
   (def service-name "serviceA")
@@ -130,12 +139,23 @@
         body-parsed (assoc-file-paths body)
         file-infos (vals (get-in @app-db [:environments (:env body-parsed)]))]
     (map #(config/assoc-selected-props % selected-props) file-infos)))
-(defn migrate-properties-file [body] (prn body))
-(defn migrate-properties-env [body] (prn body))
+(defn migrate-properties-file [body]
+  (let [body-parsed (assoc-file-paths body)                 ; TODO: Parse into array when multiple exist.
+        from-file-info (get-in @app-db [:paths (:file-path (first body-parsed))])
+        to-file-info (get-in @app-db [:paths (:file-path (second body-parsed))])]
+    (prn body-parsed)
+    (config/assoc-selected-props to-file-info (config/get-changeset from-file-info to-file-info))))
+(defn migrate-properties-env [body]
+  (let [body-parsed (assoc-file-paths body)                 ; TODO: Parse into array when multiple exist.
+        from-file-info (get-in @app-db [:paths (:file-path (first body-parsed))])
+        to-file-info (get-in @app-db [:paths (:file-path (second body-parsed))])]
+    (config/assoc-selected-props to-file-info (config/get-changeset from-file-info to-file-info))))
 
 (load-files!)
 
 (comment "Helper values for development of file reading features"
+  (def body {"fromFile" {"env" "development", "fileName" "serviceA.yml", "serviceName" "serviceA"},
+             "toFile" {"env" "staging", "fileName" "serviceA.yml", "serviceName" "serviceA"}})
   (def target-dir ".")
   (def target-dir "./sample_project_configs")
   (def m {:TMP "val"})

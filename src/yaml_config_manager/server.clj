@@ -11,6 +11,7 @@
 
 (def re (atom {}))
 (def re-body (atom {}))
+(def re-res (atom {}))
 (def server (atom nil))
 
 (defn apply-rem-wrappers [m wrappers]
@@ -44,7 +45,7 @@
     "apply-properties-env" [m/apply-properties-env [wrapper-handle-multiple wrapper-save-file wrapper-include-service]]
     "migrate-properties-file" [m/migrate-properties-file [wrapper-to-yaml]]
     "migrate-properties-env" [m/migrate-properties-env [wrapper-handle-multiple wrapper-include-service]]
-    not-found
+    [not-found []]
     )))
 
 (comment "Helpers for the wrappers"
@@ -64,14 +65,14 @@
   (do
     (reset! re request)
     (reset! re-body (:body request))
-    (let [[tar-func router-wrappers] (router (:uri request) (:body request))
-          res (apply-rem-wrappers (tar-func (:body request)) router-wrappers)]
-      (do
-        (prn res)
-        (if (= tar-func not-found)
-          res
-          {:status (= tar-func 200)
-           :body   {:body res}})))))
+    (let [[tar-func router-wrappers] (router (:uri request) (:body request))]
+      (if (= tar-func not-found)
+        (tar-func {})
+        (let [res (apply-rem-wrappers (tar-func (:body request)) router-wrappers)]
+          (do
+            (reset! re-res res)
+            {:status (= tar-func 200)
+             :body   {:body res}}))))))
 
 (defn header-adder [handler]
   (fn [request]
@@ -83,6 +84,10 @@
        wrap-json-body
        wrap-json-response
        ) request))
+
+(comment "Helper for app"
+  (def request {:body "Hello!" :uri "asdfasdf"})
+)
 
 (defn h [request]
   (app request))

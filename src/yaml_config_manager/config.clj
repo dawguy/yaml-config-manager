@@ -67,7 +67,7 @@
   (def development-file-info {:name "serviceA.yml", :service "serviceA", :env "development", :full-path "./sample_project_configs/development/serviceA/serviceA.yml", :exists true, :yaml (ordered-map :database (ordered-map :username "databaseUser" :password "databasePassword" :connection (ordered-map :url "databaseIP,databaseIP2" :port 4567)) :serviceA (ordered-map :name "Service Alpha" :deploymentType "NPE") :featureA (ordered-map :enabled true) :featureB (ordered-map :url "featureBURL" :enabled true) :featureCFlag false :featureD (ordered-map :url "featureDURL" :enabled true))})
   (def prod-file-info {:name "serviceA.yml", :service "serviceA", :env "production", :full-path "./sample_project_configs/production/serviceA/serviceA.yml", :exists true, :yaml (ordered-map :database (ordered-map :username "databaseUser" :password "databasePassword" :connection (ordered-map :url "databaseIP,databaseIP2" :port 4567)) :serviceA (ordered-map :name "Service Alpha" :deploymentType "PROD") :featureA (ordered-map :enabled true) :featureB (ordered-map :url "featureBURL" :enabled false) :featureCFlag true :featureD (ordered-map :url "featureDURL" :enabled false) :featureRemoved (ordered-map :enabled true))})
   (def file-infos [development-file-info prod-file-info])
-)
+  (def changeset [{:prop "featureB.enabled", :ks [:featureB :enabled], :val true, :full-path "./sample_project_configs/development/serviceA/serviceA.yml"} {:prop "featureRemoved.enabled", :ks [:featureRemoved :enabled], :val nil, :full-path "./sample_project_configs/development/serviceA/serviceA.yml"} {:prop "featureD.enabled", :ks [:featureD :enabled], :val true, :full-path "./sample_project_configs/development/serviceA/serviceA.yml"} {:prop "featureCFlag", :ks [:featureCFlag], :val false, :full-path "./sample_project_configs/development/serviceA/serviceA.yml"} {:prop "serviceA.deploymentType", :ks [:serviceA :deploymentType], :val "NPE", :full-path "./sample_project_configs/development/serviceA/serviceA.yml"}]))
 
 (defn diff [file-infos] "Takes in file-infos of format {:full-path, :yaml}, compares the yaml files,
                          and returns a list of all properties that are different in the format
@@ -83,12 +83,16 @@
          (remove #(apply = (map :val (second %))))
          (into {})))
 
-(defn get-changeset [from-file to-file properties-to-check]
-  (->> (diff [from-file to-file])
-       (filter (fn [[k _]] (contains? properties-to-check k)))
+(defn get-changeset [from-file-info to-file-info]
+  (->> (diff [from-file-info to-file-info])
        (map #(second %))
        (flatten)
-       (filter #(= from-file (:full-path %)))))
+       (filter #(= (:full-path from-file-info) (:full-path %)))))
+
+(comment "Helpers for migrating properties"
+  (diff file-infos)
+  (get-changeset (first file-infos) (second file-infos))
+)
 
 (defn diff-to-txt [prop-diff]
   (clojure.string/join "\n\n"
