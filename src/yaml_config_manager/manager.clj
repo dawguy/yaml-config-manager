@@ -105,8 +105,8 @@
     (prn body)
     (cond
       (contains? body "paths") (map assoc-file-info (get body "paths"))
-      (contains? body "toFile") [(assoc-file-info (get body "toFile" {}))
-                                  (assoc-file-info (get body "fromFile" {}))]
+      (contains? body "toFile") [(assoc-file-info (get body "fromFile" {}))
+                                  (assoc-file-info (get body "toFile" {}))]
       :else (assoc-file-info body))))
 
 (comment "Helper defs applying properties via postman"

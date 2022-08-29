@@ -43,7 +43,7 @@
     "load-files" [(fn [_] (m/load-files!)) [wrapper-force-success]]
     "apply-properties-file" [m/apply-properties-file [wrapper-save-file wrapper-to-yaml]]
     "apply-properties-env" [m/apply-properties-env [wrapper-handle-multiple wrapper-save-file wrapper-include-service]]
-    "migrate-properties-file" [m/migrate-properties-file [wrapper-to-yaml]]
+    "migrate-properties-file" [m/migrate-properties-file [wrapper-save-file wrapper-to-yaml]]
     "migrate-properties-env" [m/migrate-properties-env [wrapper-handle-multiple wrapper-include-service]]
     [not-found []]
     )))
