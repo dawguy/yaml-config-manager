@@ -1,3 +1,4 @@
+name: serviceCProduction
 serviceC:
   name: 'Service Charlie'
   deploymentType: 'NPE'

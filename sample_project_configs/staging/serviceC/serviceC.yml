@@ -1,3 +1,4 @@
+name: serviceCStaging
 serviceC:
   name: 'Service Charlie'
   deploymentType: 'NPE'

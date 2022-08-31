@@ -1,3 +1,4 @@
+name: serviceADevelopment
 database:
   username: 'databaseUser'
   password: 'databasePassword'

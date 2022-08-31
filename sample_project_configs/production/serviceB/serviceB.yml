@@ -1,3 +1,4 @@
+name: serviceBProduction
 database:
   username: 'databaseUser'
   password: 'databasePassword'
