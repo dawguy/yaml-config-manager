@@ -105,8 +105,8 @@
     (prn body)
     (cond
       (contains? body "paths") (map assoc-file-info (get body "paths"))
-      (contains? body "toFile") [(assoc-file-info (get body "fromFile" {}))
-                                  (assoc-file-info (get body "toFile" {}))]
+      (and (contains? body "to") (contains? body "from")) [(assoc-file-info (get body "from" {}))
+                                                           (assoc-file-info (get body "to" {}))]
       :else (assoc-file-info body))))
 
 (comment "Helper defs applying properties via postman"
@@ -140,16 +140,20 @@
         file-infos (vals (get-in @app-db [:environments (:env body-parsed)]))]
     (map #(config/assoc-selected-props % selected-props) file-infos)))
 (defn migrate-properties-file [body]
-  (let [body-parsed (assoc-file-paths body)                 ; TODO: Parse into array when multiple exist.
+  (let [body-parsed (assoc-file-paths body)
         from-file-info (get-in @app-db [:paths (:file-path (first body-parsed))])
         to-file-info (get-in @app-db [:paths (:file-path (second body-parsed))])]
-    (prn body-parsed)
     (config/assoc-selected-props to-file-info (config/get-changeset from-file-info to-file-info))))
 (defn migrate-properties-env [body]
   (let [body-parsed (assoc-file-paths body)                 ; TODO: Parse into array when multiple exist.
-        from-file-info (get-in @app-db [:paths (:file-path (first body-parsed))])
-        to-file-info (get-in @app-db [:paths (:file-path (second body-parsed))])]
-    (config/assoc-selected-props to-file-info (config/get-changeset from-file-info to-file-info))))
+        from-file-infos (vals (get-in @app-db [:environments (:env (first body-parsed))]))
+        to-file-infos (vals (get-in @app-db [:environments (:env (second body-parsed))]))]
+    (prn body-parsed)
+    (prn from-file-infos)
+    (prn to-file-infos)
+    ;(doseq [[from-file-info to-file-info] (group-env-file-infos from-file-infos to-file-infos)]
+    ;  (config/assoc-selected-props to-file-info (config/get-changeset from-file-info to-file-info)))
+    ))
 
 (load-files!)
 
