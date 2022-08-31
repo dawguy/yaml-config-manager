@@ -10,6 +10,13 @@
 
 ; This one is gonna be a bit specific to our sample_project_configs directory, but that's okay
 (use 'yaml-config-manager.manager :reload-all)
+(def from-file-infos (atom {}))
+(def to-file-infos (atom {}))
+
+(comment "Redefine helper atoms into def'd vars"
+  (def from-file-infos (deref from-file-infos))
+  (def to-file-infos (deref to-file-infos))
+)
 
 (defonce app-db (atom {}))
 (def target-dir "./sample_project_configs")
@@ -102,12 +109,26 @@
 )
 (defn assoc-file-paths [body]
   (do
-    (prn body)
     (cond
       (contains? body "paths") (map assoc-file-info (get body "paths"))
       (and (contains? body "to") (contains? body "from")) [(assoc-file-info (get body "from" {}))
                                                            (assoc-file-info (get body "to" {}))]
       :else (assoc-file-info body))))
+
+(defn group-env-file-infos [from-file-infos to-file-infos]
+  (loop [rem from-file-infos
+         to-file-infos-lookup (group-by :name to-file-infos)
+         file-infos []]
+    (if (empty? rem)
+      file-infos
+      (recur (rest rem)
+             to-file-infos-lookup
+             (conj file-infos [(first rem) (first (get to-file-infos-lookup (:name (first rem))))])))))
+
+(comment "Group env file infos helper"
+  (first from-file-infos)
+  (group-env-file-infos from-file-infos to-file-infos)
+)
 
 (comment "Helper defs applying properties via postman"
   (def service-name "serviceA")
@@ -145,15 +166,13 @@
         to-file-info (get-in @app-db [:paths (:file-path (second body-parsed))])]
     (config/assoc-selected-props to-file-info (config/get-changeset from-file-info to-file-info))))
 (defn migrate-properties-env [body]
-  (let [body-parsed (assoc-file-paths body)                 ; TODO: Parse into array when multiple exist.
+  (let [body-parsed (assoc-file-paths body)
         from-file-infos (vals (get-in @app-db [:environments (:env (first body-parsed))]))
         to-file-infos (vals (get-in @app-db [:environments (:env (second body-parsed))]))]
-    (prn body-parsed)
-    (prn from-file-infos)
-    (prn to-file-infos)
-    ;(doseq [[from-file-info to-file-info] (group-env-file-infos from-file-infos to-file-infos)]
-    ;  (config/assoc-selected-props to-file-info (config/get-changeset from-file-info to-file-info)))
-    ))
+    ;(reset! yaml-config-manager.manager/from-file-infos from-file-infos)
+    ;(reset! yaml-config-manager.manager/to-file-infos to-file-infos)
+    (mapv identity (for [[from-file-info to-file-info] (group-env-file-infos from-file-infos to-file-infos)]
+                (config/assoc-selected-props to-file-info (config/get-changeset from-file-info to-file-info))))))
 
 (load-files!)
 
