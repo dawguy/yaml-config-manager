@@ -39,6 +39,7 @@
 (defn not-found [_] {:status 404 :body {:error "Endpoint not found."}})
 (defn router [uri body]
 (let [target (last (clojure.string/split uri #"/"))]
+  (prn body)
   (case target
     "load-files" [(fn [_] (m/load-files!)) [wrapper-force-success]]
     "apply-properties-file" [m/apply-properties-file [wrapper-save-file wrapper-to-yaml]]

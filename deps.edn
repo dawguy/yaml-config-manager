@@ -9,6 +9,7 @@
          nrepl/nrepl                 {:mvn/version "0.9.0"}
          cheshire/cheshire           {:mvn/version "5.11.0"}
          org.flatland/ordered        {:mvn/version "1.5.9"}
+         clj-http/clj-http           {:mvn/version "3.9.1"}
          }
  :aliases
  {:dev {:extra-paths ["src/yaml_config_manager/dev" "dev"]
