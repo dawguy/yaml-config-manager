@@ -130,7 +130,6 @@
  )
 
 (defn lookup-secret [word secrets]
-  (prn "SECRET LOOKUP!!!")
   (let [s (clojure.string/join word)]
     (if (contains? secrets s)
       (get secrets s)
@@ -140,16 +139,10 @@
   (clojure.string/join (loop [built-s (seq [])
                               remaining-s (seq (char-array s))
                               cur-secret-s nil]
-                         (prn "***************")
-                         (prn built-s)
-                         (prn remaining-s)
-                         (prn cur-secret-s)
-                         (prn "===============")
                          (if (empty? remaining-s)
                            (concat built-s cur-secret-s)
                            (let [next-c (str (first remaining-s))
                                  rem (rest remaining-s)]
-                             (prn next-c)
                              (case next-c
                                ; $ always represents ending the current secret sequence and potentially beginning another
                                "$" (recur (concat built-s cur-secret-s)
