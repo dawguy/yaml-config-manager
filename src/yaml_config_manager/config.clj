@@ -44,9 +44,9 @@
       (assoc :ks ks)
       (assoc :val ps)))
 
-(defn assoc-yaml-as-spring-properties [m]
-  (let [kvs (yaml-to-kvs (:yaml m))]
-    (assoc m :spring-properties
+(defn assoc-yaml-as-spring-properties [file-info]
+  (let [kvs (yaml-to-kvs (:yaml file-info))]
+    (assoc file-info :spring-properties
       (map (fn [[ks ps]]
              (if (nil? (first ks))
                nil
@@ -128,3 +128,111 @@
          (def data  {:featureCFlag "true", :featureD {:url "updatedURLForSpringProperties"}})
          (def data (ordered-map :a (ordered-map :a 1) :b (ordered-map :b 2)))
  )
+
+(defn lookup-secret [word secrets]
+  (prn "SECRET LOOKUP!!!")
+  (let [s (clojure.string/join word)]
+    (if (contains? secrets s)
+      (get secrets s)
+      (concat "${" s "}")))
+  )
+(defn replace-secrets [s secrets] "Replaces all occurrences of ${secretName} with their matching secret when the secret exsits"
+  (clojure.string/join (loop [built-s (seq [])
+                              remaining-s (seq (char-array s))
+                              cur-secret-s nil]
+                         (prn "***************")
+                         (prn built-s)
+                         (prn remaining-s)
+                         (prn cur-secret-s)
+                         (prn "===============")
+                         (if (empty? remaining-s)
+                           (concat built-s cur-secret-s)
+                           (let [next-c (str (first remaining-s))
+                                 rem (rest remaining-s)]
+                             (prn next-c)
+                             (case next-c
+                               ; $ always represents ending the current secret sequence and potentially beginning another
+                               "$" (recur (concat built-s cur-secret-s)
+                                          rem
+                                          (seq "$"))
+                               ; { denotes the start of a secret if it follows a $ otherwise treat as character with no special meaning
+                               "{" (if (and (= 1 (count cur-secret-s))
+                                            ; https://stackoverflow.com/questions/3970830/which-is-the-most-clojuresque-way-to-compare-characters-and-string-single-char
+                                            (= (first cur-secret-s) \$)) ; clojure literal for $
+                                     (recur built-s
+                                            rem
+                                            (seq "${"))
+                                     (recur (concat built-s cur-secret-s next-c)
+                                            rem
+                                            nil)
+                                     )
+                               ; } denotes the end of a secret if the secret list is full otherwise treat as character with no special meaning
+                               "}" (if (<= 2 (count cur-secret-s))
+                                     (recur (concat built-s (lookup-secret (drop 2 cur-secret-s) secrets))
+                                            rem
+                                            nil)
+                                     (recur (concat built-s cur-secret-s next-c)
+                                            rem
+                                            nil)
+                                     )
+                               ; Other characters get appended to cur-secret if we have one started (length >= `(count ${`)
+                               ; Or the built string if no cur secret exists
+                               (if (<= 2 (count cur-secret-s))
+                                 (recur built-s
+                                        rem
+                                        (concat cur-secret-s next-c))
+                                 (recur (concat built-s cur-secret-s next-c)
+                                        rem
+                                        nil))
+                               ))))))
+
+(comment "Helper for replace-secrets function"
+  (replace-secrets s secrets)
+
+  (def built-s (concat (seq (char-array "abc")) (seq "$")))
+  (def cur-secret-s (seq (char-array "${asdf")))
+  (def cur-secret-s (seq (char-array "$")))
+  (def cur-secret-s (seq (char-array "${")))
+  (def cur-secret-s (seq (char-array "a{b")))
+  (def cur-secret-s nil)
+
+  (def cur-secret-s nil)
+  (def next-c "d")
+   (def next-c (str (first (char-array "dbUser"))))
+
+  (def built-s nil)
+  (def rem (rest "dbUser"))
+
+  ; String that hits all the edge cases I could think of. $ at start. $ for non-existent, $ duplicate, $ at end,
+  (def s "${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser}")
+  (def s "${dbUser}")
+  (def s "dbUser")
+  (def secrets {"dbUser" "DB-USER-SUCCESS", "dbPassword" "DB-PASSWORD-SUCCESS"})
+  (replace-secrets s secrets)
+)
+
+(defn yaml-to-spring-properties-with-secrets [file-info secrets] "Replaces all occurences of a ${secretName} in the values of the yaml"
+  ; Idea for this algorithm
+  ; Turn file-info into spring-properties string
+  ; For every secret do string replacement of all matches.
+
+  ; Alternative idea would be to alter yaml -> spring -> update vals with regex string replacement -> print spring properties string
+  ; I can see the first idea being easier to implement and roughly the same speed
+)
+
+; Idea from stackoverflow (can't link due to lack of internet on laptop)
+; String reader. Output list, when you see pattern ${ move to lookup map and replace
+(clojure.string/join (seq (char-array "Hello world ${name} ${name} you rock! ${power} ^ 2")))
+(concat (seq (char-array "ABC")) "d")
+
+(comment "Helpers for yaml to spring properties with secrets"
+  ; Has 3 secrets. ${dbUser}, ${dbPassword}, and ${doesNotExist}
+  (def spring-prop {:prop "database.username", :ks [:database :username], :val "${dbUser}"})
+  (def spring-prop {:prop "database.username", :ks [:database :username], :val "$(dbPassword}"})
+  (def spring-prop {:prop "database.username", :ks [:database :username], :val "${dbUser}$(dbPassword}"})
+  (def spring-prop {:prop "database.username", :ks [:database :username], :val "${doesNotExist}"})
+  (def spring-prop {:prop "database.username", :ks [:database :username], :val "aaaaa"})
+  (def spring-prop {:prop "database.username", :ks [:database :username], :val true})
+  (def spring-prop {:prop "database.username", :ks [:database :username], :val nil})
+  (def file-info {:name "serviceA.yml", :service "serviceA", :env "development", :full-path "./sample_project_configs/development/serviceA/serviceA.yml", :exists true, :yaml (ordered-map :database (ordered-map :username "${dbUser}" :password "${dbPassword}" :connection (ordered-map :url "databaseIP,databaseIP2" :port 4567)) :serviceA (ordered-map :name "${doesNotExist}" :deploymentType "NPE") :featureA (ordered-map :enabled true) :featureB (ordered-map :url "featureBURL" :enabled true) :featureCFlag false :featureD (ordered-map :url "featureDURL" :enabled true))})
+)
