@@ -94,6 +94,11 @@
   (get-changeset (first file-infos) (second file-infos))
 )
 
+(defn spring-to-txt [kvs] "Takes list of spring properties in format [{:prop, :ks, :val}, ...] and turns it into a string"
+  (clojure.string/join "\n"
+     (map (fn [prop]
+            (let [{:keys [prop val]} prop]
+              (str prop "=" val))) kvs)))
 (defn diff-to-txt [prop-diff]
   (clojure.string/join "\n\n"
      (map
@@ -204,14 +209,10 @@
   (replace-secrets s secrets)
 )
 
-(defn yaml-to-spring-properties-with-secrets [file-info secrets] "Replaces all occurences of a ${secretName} in the values of the yaml"
-  ; Idea for this algorithm
-  ; Turn file-info into spring-properties string
-  ; For every secret do string replacement of all matches.
-
-  ; Alternative idea would be to alter yaml -> spring -> update vals with regex string replacement -> print spring properties string
-  ; I can see the first idea being easier to implement and roughly the same speed
-)
+(defn yaml-to-spring-properties-with-secrets [file-info secrets]
+  "Takes a file-info and returns a string version of the spring properties with secrets filled in."
+  (replace-secrets (spring-to-txt (:spring-properties (assoc-yaml-as-spring-properties file-info)))
+                   secrets))
 
 ; Idea from stackoverflow (can't link due to lack of internet on laptop)
 ; String reader. Output list, when you see pattern ${ move to lookup map and replace
