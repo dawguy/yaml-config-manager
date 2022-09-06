@@ -3,7 +3,8 @@
             [clojure.tools.namespace.file :as ns-file]
             [yaml-config-manager.config :as config]
             [clojure.java.io :as io]
-            [cheshire.core :as json])
+            [cheshire.core :as json]
+            [yaml-config-manager.requester :as req])
 
   (:import (java.io File))
   )
@@ -28,6 +29,9 @@
                                                                                                :indent 2})))
 (defn save-file-info! [file-info]
   (write-file! (:full-path file-info) (:yaml file-info)))
+(defn write-spring-properties-info [file-info]
+
+)
 
 (defn assoc-file-path-info [m f]
   (let [service-f (.getParentFile f)
@@ -114,7 +118,24 @@
       (and (contains? body "to") (contains? body "from")) [(assoc-file-info (get body "from" {}))
                                                            (assoc-file-info (get body "to" {}))]
       :else (assoc-file-info body))))
+(defn assoc-spring-secret-filled-properties [m props]
+  (-> m
+      (assoc :spring-properties-str props)))
 
+(defn get-secrets [file-info] "Caches the secrets found into app-db."
+  (let [vault-path (get-vault-path file-info)]
+    (if (not (contains? (get @app-db :secrets) vault-path))
+      (swap! app-db #(assoc-in % [:secrets vault-path] (req/request-secrets vault-path (get-token-from-env))))
+    )
+    (get-in @app-db [:secrets vault-path])
+  )
+)
+(defn get-vault-path [file-info] "For now hard-codes the value, but can be extended in the future to take file-info and look up what the correct Vault path is."
+  "http://localhost:3000/dummy-json"                               ; TODO: Replace with a real URL
+)
+(defn get-token-from-env [] "Reads the vault token from an environment variable."
+  "abcdefghjkl"                                             ; TODO: Replace with an environment lookup to VAULT_TOKEN
+)
 (defn group-env-file-infos [from-file-infos to-file-infos]
   (loop [rem from-file-infos
          to-file-infos-lookup (group-by :name to-file-infos)
@@ -140,6 +161,7 @@
   (def selected-props (map config/property-to-kv (kv-to-spring-properties body)))
   (def file-info (get-in @app-db [:paths "./sample_project_configs/development/serviceA/serviceA.yml"]))
   (def info (assoc-file-paths body))
+  (def vault-path "http://localhost:3000/dummy-json")
 )
 ; Format is target_dir/<env>/<service>/<file>.yml
 (defn apply-properties-file [body]
@@ -174,9 +196,26 @@
     (mapv identity (for [[from-file-info to-file-info] (group-env-file-infos from-file-infos to-file-infos)]
                 (config/assoc-selected-props to-file-info (config/get-changeset from-file-info to-file-info))))))
 
+(defn create-spring-properties [file-info]
+  "Takes in a set of file-infos and secrets list and create"
+  (config/yaml-to-spring-properties-with-secrets file-info (get-secrets file-info))
+)
+(defn route-create-development-spring-properties-file [body]
+  "Creates a spring properties object for a given yaml file and fills in secrets with the config response from vault"
+  (let [body-parsed (assoc-file-paths body)
+        file-info (get-in @app-db [:paths (:file-path body-parsed)])]
+    (create-spring-properties file-info)
+    ))
+(defn route-create-development-spring-properties-env [body]
+  "Creates a spring properties object for a given yaml file and fills in secrets with the config response from vault"
+  (let [body-parsed (assoc-file-paths body)
+        file-infos (vals (get-in @app-db [:environments (:env body-parsed)]))]
+    (map #(assoc-spring-secret-filled-properties % (create-spring-properties %))) file-infos)))
+
 (load-files!)
 
 (comment "Helper values for development of file reading features"
+  (def body {"env" "development", "serviceName" "serviceA", "fileName" "serviceA.yml"})
   (def body {"fromFile" {"env" "development", "fileName" "serviceA.yml", "serviceName" "serviceA"},
              "toFile" {"env" "staging", "fileName" "serviceA.yml", "serviceName" "serviceA"}})
   (def target-dir ".")

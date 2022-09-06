@@ -1,10 +1,10 @@
 name: serviceADevelopment
 database:
-  username: 'databaseUser'
-  password: 'databasePassword'
+  username: '${dbUser}'
+  password: '${dbPassword}'
   connection:
     url: 'databaseIP,databaseIP2'
-    port: 4567
+    port: '${the-port-in-use}'
 serviceA:
   name: 'Service Alpha'
   deploymentType: 'NPE'
@@ -17,3 +17,5 @@ featureCFlag: false
 featureD:
   url: 'featureDURL'
   enabled: true
+server:
+  name: '${server.name}'

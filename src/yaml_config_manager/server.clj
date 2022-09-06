@@ -4,6 +4,7 @@
             [ring.util.response :as r]
             [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
             [yaml-config-manager.manager :as m]
+            [yaml-config-manager.requester :as req]
             [flatland.ordered.map :refer (ordered-map)]
             ))
 
@@ -46,6 +47,9 @@
     "apply-properties-env" [m/apply-properties-env [wrapper-handle-multiple wrapper-save-file wrapper-include-service]]
     "migrate-properties-file" [m/migrate-properties-file [wrapper-save-file wrapper-to-yaml]]
     "migrate-properties-env" [m/migrate-properties-env [wrapper-handle-multiple wrapper-save-file wrapper-include-service]]
+    "create-development-spring-properties-file" [m/route-create-development-spring-properties-file []]
+    "create-development-spring-properties-env" [m/route-create-development-spring-properties-env []]
+    "dummy-json" [req/dummy-json []]
     [not-found []]
     )))
 
