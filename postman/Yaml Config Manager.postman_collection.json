@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "de29dee2-4b8b-4816-bc2e-12ae6ca83355",
-		"name": "Yaml Config Manager",
+		"_postman_id": "37363bdd-7bd8-4cb8-9c4e-8379272386cb",
+		"name": "Yaml Config Manage",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -49,6 +49,24 @@
 					"port": "3000",
 					"path": [
 						"unload-files"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Dummy-JSON",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "localhost:3000/dummy-json",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"dummy-json"
 					]
 				}
 			},
@@ -207,40 +225,13 @@
 			"response": []
 		},
 		{
-			"name": "Migrate-Properties-Env",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"fromEnv\": \"development\",\n    \"toEnv\": \"staging\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "localhost:3000/migrate-properites-env",
-					"host": [
-						"localhost"
-					],
-					"port": "3000",
-					"path": [
-						"migrate-properites-env"
-					]
-				}
-			},
-			"response": []
-		},
-		{
 			"name": "Migrate-Properties-File",
 			"request": {
 				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"fromEnv\": \"development\",\n    \"fromFileName\": \"serviceA.yml\",\n    \"fromServiceName\": \"serviceA\",\n    \"toEnv\": \"staging\",\n    \"toFileName\": \"serviceA.yml\",\n    \"toServiceName\": \"serviceA\"\n}",
+					"raw": "{\n    \"from\": {\n        \"env\": \"development\",\n        \"fileName\": \"serviceA.yml\",\n        \"serviceName\": \"serviceA\"\n    },\n    \"to\": {\n        \"env\": \"production\",\n        \"fileName\": \"serviceA.yml\",\n        \"serviceName\": \"serviceA\"        \n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -248,13 +239,94 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:3000/migrate-properites-file",
+					"raw": "localhost:3000/migrate-properties-file",
 					"host": [
 						"localhost"
 					],
 					"port": "3000",
 					"path": [
-						"migrate-properites-file"
+						"migrate-properties-file"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Migrate-Properties-Env",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"from\": {\n        \"env\": \"development\"\n    },\n    \"to\": {\n        \"env\": \"staging\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/migrate-properties-env",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"migrate-properties-env"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Development Spring Properties File",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"env\": \"development\",\n    \"fileName\": \"serviceA.yml\",\n    \"serviceName\": \"serviceA\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/create-development-spring-properties-file",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"create-development-spring-properties-file"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Development Spring Properties Env",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"env\": \"development\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/create-development-spring-properties-env",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"create-development-spring-properties-env"
 					]
 				}
 			},
