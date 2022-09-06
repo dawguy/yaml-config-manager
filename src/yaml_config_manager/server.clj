@@ -28,6 +28,8 @@
   (apply-rem-wrappers (dissoc file-info :f) wrappers))
 (defn wrapper-save-file [file-info wrappers]
   (apply-rem-wrappers (do (m/save-file-info! file-info) file-info) wrappers))
+(defn wrapper-save-to-spring-properties-file [file-info wrappers]
+  (apply-rem-wrappers (do (m/save-to-spring-properties-file-info! file-info) file-info) wrappers))
 ; https://stackoverflow.com/questions/4019249/clojure-finding-out-if-a-collection-is-seq-able
 (defn wrapper-handle-multiple [file-infos wrappers]
   (let [infos (if (sequential? file-infos) file-infos [file-infos])]
@@ -47,8 +49,8 @@
     "apply-properties-env" [m/apply-properties-env [wrapper-handle-multiple wrapper-save-file wrapper-include-service]]
     "migrate-properties-file" [m/migrate-properties-file [wrapper-save-file wrapper-to-yaml]]
     "migrate-properties-env" [m/migrate-properties-env [wrapper-handle-multiple wrapper-save-file wrapper-include-service]]
-    "create-development-spring-properties-file" [m/route-create-development-spring-properties-file []]
-    "create-development-spring-properties-env" [m/route-create-development-spring-properties-env []]
+    "create-development-spring-properties-file" [m/route-create-development-spring-properties-file [wrapper-remove-f wrapper-save-to-spring-properties-file]]
+    "create-development-spring-properties-env" [m/route-create-development-spring-properties-env [wrapper-handle-multiple wrapper-remove-f wrapper-save-to-spring-properties-file]]
     "dummy-json" [req/dummy-json []]
     [not-found []]
     )))

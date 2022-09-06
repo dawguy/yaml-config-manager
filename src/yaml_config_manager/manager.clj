@@ -21,6 +21,7 @@
 
 (defonce app-db (atom {}))
 (def target-dir "./sample_project_configs")
+(def spring-target-dir (str target-dir "/spring_properties"))
 
 (defn read-file [f] "Reads a yaml file"
   (if (.exists f)
@@ -29,8 +30,8 @@
                                                                                                :indent 2})))
 (defn save-file-info! [file-info]
   (write-file! (:full-path file-info) (:yaml file-info)))
-(defn write-spring-properties-info [file-info]
-
+(defn save-to-spring-properties-file-info! [file-info]
+  (spit (str spring-target-dir "/" (:service file-info) ".properties") (:spring-properties-str file-info))
 )
 
 (defn assoc-file-path-info [m f]
@@ -204,13 +205,13 @@
   "Creates a spring properties object for a given yaml file and fills in secrets with the config response from vault"
   (let [body-parsed (assoc-file-paths body)
         file-info (get-in @app-db [:paths (:file-path body-parsed)])]
-    (create-spring-properties file-info)
+    (assoc-spring-secret-filled-properties file-info (create-spring-properties file-info))
     ))
 (defn route-create-development-spring-properties-env [body]
   "Creates a spring properties object for a given yaml file and fills in secrets with the config response from vault"
   (let [body-parsed (assoc-file-paths body)
         file-infos (vals (get-in @app-db [:environments (:env body-parsed)]))]
-    (map #(assoc-spring-secret-filled-properties % (create-spring-properties %))) file-infos)))
+    (mapv #(assoc-spring-secret-filled-properties % (create-spring-properties %)) file-infos)))
 
 (load-files!)
 
