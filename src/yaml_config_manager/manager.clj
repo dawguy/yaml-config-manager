@@ -31,7 +31,7 @@
 (defn save-file-info! [file-info]
   (write-file! (:full-path file-info) (:yaml file-info)))
 (defn save-to-spring-properties-file-info! [file-info]
-  (spit (str spring-target-dir "/" (:service file-info) ".properties") (:spring-properties-str file-info))
+  (spit (str spring-target-dir "/application-" (first (clojure.string/split (:name file-info) #"\.")) ".properties") (:spring-properties-str file-info))
 )
 
 (defn assoc-file-path-info [m f]
@@ -126,7 +126,7 @@
   "http://localhost:3000/dummy-json"                               ; TODO: Replace with a real URL
   )
 (defn get-token-from-env [] "Reads the vault token from an environment variable."
-  "abcdefghjkl"                                             ; TODO: Replace with an environment lookup to VAULT_TOKEN
+  (or (System/getenv "VAULT_TOKEN") "NO-TOKEN-FOUND")
   )
 (defn get-secrets [file-info] "Caches the secrets found into app-db."
   (let [vault-path (get-vault-path file-info)]
