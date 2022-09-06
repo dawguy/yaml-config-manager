@@ -122,7 +122,12 @@
 (defn assoc-spring-secret-filled-properties [m props]
   (-> m
       (assoc :spring-properties-str props)))
-
+(defn get-vault-path [file-info] "For now hard-codes the value, but can be extended in the future to take file-info and look up what the correct Vault path is."
+  "http://localhost:3000/dummy-json"                               ; TODO: Replace with a real URL
+  )
+(defn get-token-from-env [] "Reads the vault token from an environment variable."
+  "abcdefghjkl"                                             ; TODO: Replace with an environment lookup to VAULT_TOKEN
+  )
 (defn get-secrets [file-info] "Caches the secrets found into app-db."
   (let [vault-path (get-vault-path file-info)]
     (if (not (contains? (get @app-db :secrets) vault-path))
@@ -130,12 +135,6 @@
     )
     (get-in @app-db [:secrets vault-path])
   )
-)
-(defn get-vault-path [file-info] "For now hard-codes the value, but can be extended in the future to take file-info and look up what the correct Vault path is."
-  "http://localhost:3000/dummy-json"                               ; TODO: Replace with a real URL
-)
-(defn get-token-from-env [] "Reads the vault token from an environment variable."
-  "abcdefghjkl"                                             ; TODO: Replace with an environment lookup to VAULT_TOKEN
 )
 (defn group-env-file-infos [from-file-infos to-file-infos]
   (loop [rem from-file-infos
