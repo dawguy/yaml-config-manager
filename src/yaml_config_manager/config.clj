@@ -140,36 +140,40 @@
       (get secrets s)
       (concat "${" s "}")))
   )
+
+; Be careful. The into is required to avoid StackOverflowExceptions which occur when mixing lazy-seqs with concat
+; https://stuartsierra.com/2015/04/26/clojure-donts-concat
+; https://stackoverflow.com/questions/24958907/why-does-reduce-give-a-stackoverflowerror-in-clojure
 (defn replace-secrets [s secrets] "Replaces all occurrences of ${secretName} with their matching secret when the secret exsits"
-  (clojure.string/join (loop [built-s (seq [])
-                              remaining-s (seq (char-array s))
+  (clojure.string/join (loop [built-s []
+                              remaining-s (vec (char-array s))
                               cur-secret-s nil]
                          (if (empty? remaining-s)
-                           (concat built-s cur-secret-s)
+                           (into built-s cur-secret-s)
                            (let [next-c (str (first remaining-s))
                                  rem (rest remaining-s)]
                              (case next-c
                                ; $ always represents ending the current secret sequence and potentially beginning another
-                               "$" (recur (concat built-s cur-secret-s)
+                               "$" (recur (into built-s cur-secret-s)
                                           rem
-                                          (seq "$"))
+                                          (vec "$"))
                                ; { denotes the start of a secret if it follows a $ otherwise treat as character with no special meaning
                                "{" (if (and (= 1 (count cur-secret-s))
                                             ; https://stackoverflow.com/questions/3970830/which-is-the-most-clojuresque-way-to-compare-characters-and-string-single-char
                                             (= (first cur-secret-s) \$)) ; clojure literal for $
                                      (recur built-s
                                             rem
-                                            (seq "${"))
-                                     (recur (concat built-s cur-secret-s next-c)
+                                            (vec "${"))
+                                     (recur (into (into built-s cur-secret-s) next-c)
                                             rem
                                             nil)
                                      )
                                ; } denotes the end of a secret if the secret list is full otherwise treat as character with no special meaning
                                "}" (if (<= 2 (count cur-secret-s))
-                                     (recur (concat built-s (lookup-secret (drop 2 cur-secret-s) secrets))
+                                     (recur (into built-s (lookup-secret (drop 2 cur-secret-s) secrets))
                                             rem
                                             nil)
-                                     (recur (concat built-s cur-secret-s next-c)
+                                     (recur (into (into built-s cur-secret-s) next-c)
                                             rem
                                             nil)
                                      )
@@ -178,8 +182,8 @@
                                (if (<= 2 (count cur-secret-s))
                                  (recur built-s
                                         rem
-                                        (concat cur-secret-s next-c))
-                                 (recur (concat built-s cur-secret-s next-c)
+                                        (into cur-secret-s next-c))
+                                 (recur (into (into built-s cur-secret-s) next-c)
                                         rem
                                         nil))
                                ))))))
@@ -198,11 +202,18 @@
   (def next-c "d")
    (def next-c (str (first (char-array "dbUser"))))
 
+   ; Note: Need to convert char-array to vec
+  (into (take 3 (char-array "${abc} a")) (take 2 (char-array "bc} a"))) ; cb${a
+  (into (vec (take 3 (char-array "${abc} a"))) (take 2 (char-array "bc} a"))) ; ${abc
+  (into (take 3 (char-array "${abc} a")) (reverse (take 2 (char-array "bc} a")))) ; bc${a
+  (into (vec (take 3 (char-array "${abc} a"))) (flatten [(take 2 (char-array "bc} a")) (take 3 (char-array "} a"))])) ; ${abc
+
   (def built-s nil)
   (def rem (rest "dbUser"))
 
   ; String that hits all the edge cases I could think of. $ at start. $ for non-existent, $ duplicate, $ at end,
   (def s "${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser}")
+  (def s "${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ${dbUser} went to the${dbPassword} and ${secretDoesNotExist} but a{b c$d e}f duplicate ${dbUser} ")
   (def s "${dbUser}")
   (def s "dbUser")
   (def secrets {"dbUser" "DB-USER-SUCCESS", "dbPassword" "DB-PASSWORD-SUCCESS"})
