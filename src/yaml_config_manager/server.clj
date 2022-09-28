@@ -45,6 +45,9 @@
   (prn body)
   (case target
     "load-files" [(fn [_] (m/load-files!)) [wrapper-force-success]]
+    "get-envs" [m/get-envs []]
+    "get-file-info-file" [m/get-file-info-file [wrapper-remove-f]]
+    "get-file-info-env" [m/get-file-info-env [wrapper-handle-multiple wrapper-remove-f]]
     "apply-properties-file" [m/apply-properties-file [wrapper-save-file wrapper-to-yaml]]
     "apply-properties-env" [m/apply-properties-env [wrapper-handle-multiple wrapper-save-file wrapper-include-service]]
     "migrate-properties-file" [m/migrate-properties-file [wrapper-save-file wrapper-to-yaml]]

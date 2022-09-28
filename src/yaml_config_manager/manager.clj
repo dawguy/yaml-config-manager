@@ -163,6 +163,18 @@
   (def info (assoc-file-paths body))
   (def vault-path "http://localhost:3000/dummy-json")
 )
+
+(defn get-envs [_]
+  (keys (get @app-db :environments)))
+(defn get-file-info-file [body] "Returns the file-info object for the body"
+  (let [body-parsed (assoc-file-paths body)
+        file-info (get-in @app-db [:paths (:file-path body-parsed)])]
+    (config/assoc-yaml-as-spring-properties file-info)))
+(defn get-file-info-env [body]
+  (let [body-parsed (assoc-file-paths body)
+        file-infos (vals (get-in @app-db [:environments (:env body-parsed)]))]
+    (map config/assoc-yaml-as-spring-properties file-infos)))
+
 ; Format is target_dir/<env>/<service>/<file>.yml
 (defn apply-properties-file [body]
   (let [selected-props (map config/property-to-kv (kv-to-spring-properties body))
