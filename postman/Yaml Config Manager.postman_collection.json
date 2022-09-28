@@ -100,6 +100,78 @@
 			"response": []
 		},
 		{
+			"name": "Get-Envs",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "localhost:3000/get-envs",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"get-envs"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-File-Info-File",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"env\": \"development\",\n    \"fileName\": \"serviceA.yml\",\n    \"serviceName\": \"serviceA\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/get-file-info-file",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"get-file-info-file"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-File-Info-Env",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"env\": \"development\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/get-file-info-env",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"get-file-info-env"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Apply-Properties-Env",
 			"request": {
 				"method": "POST",
