@@ -145,6 +145,33 @@
 			"response": []
 		},
 		{
+			"name": "Get-File-Info-File-By-Name",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{    \"fileName\": \"serviceA.yml\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/get-file-info-by-name",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"get-file-info-by-name"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Get-File-Info-Env",
 			"request": {
 				"method": "POST",
