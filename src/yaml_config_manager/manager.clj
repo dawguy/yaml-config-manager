@@ -174,6 +174,10 @@
   (let [body-parsed (assoc-file-paths body)
         file-infos (vals (get-in @app-db [:environments (:env body-parsed)]))]
     (map config/assoc-yaml-as-spring-properties file-infos)))
+(defn get-file-info-by-name [body]
+  (let [body-parsed (assoc-file-paths body)
+        file-infos (vals (get-in @app-db [:files (:file-name body-parsed)]))]
+    (map config/assoc-yaml-as-spring-properties file-infos)))
 
 ; Format is target_dir/<env>/<service>/<file>.yml
 (defn apply-properties-file [body]
