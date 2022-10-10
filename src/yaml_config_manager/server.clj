@@ -72,14 +72,20 @@
   (apply-rem-wrappers file-infos wrappers)
 )
 
+(def a-request (atom {}))
+
 (defn handler [request]
+  ;(reset! a-request request)
   (do
     (reset! re request)
     (reset! re-body (:body request))
     (let [[tar-func router-wrappers] (router (:uri request) (:body request))]
       (if (= tar-func not-found)
         (tar-func {})
-        (let [res (apply-rem-wrappers (tar-func (:body request)) router-wrappers)]
+        (let [body (if (seqable? (:body request))
+                     (:body request)
+                     {})
+              res (apply-rem-wrappers (tar-func body) router-wrappers)]
           (do
             (reset! re-res res)
             {:status (= tar-func 200)
@@ -87,13 +93,23 @@
 
 (defn header-adder [handler]
   (fn [request]
-    (r/header (handler request) "Content-Type" "application/json")))
+    (r/header (handler request) "Content-Type" "application/json")
+  )
+)
+
+(defn wrap-cors-response [handler]
+  (fn [response]
+    (-> (handler response)
+        (r/header "Content-Type" "application/json")
+        (r/header "Access-Control-Allow-Origin" "http://localhost:4200")
+        (r/header "Access-Control-Allow-Headers" "access-control-allow-origin, content-type"))))
 
 (defn app [request]
   ((-> handler
        header-adder
        wrap-json-body
        wrap-json-response
+       wrap-cors-response
        ) request))
 
 (comment "Helper for app"
