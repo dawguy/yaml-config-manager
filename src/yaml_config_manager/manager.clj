@@ -166,6 +166,8 @@
 
 (defn get-envs [_]
   (keys (get @app-db :environments)))
+(defn get-file-names [_]
+  (keys (get @app-db :files)))
 (defn get-file-info-file [body] "Returns the file-info object for the body"
   (let [body-parsed (assoc-file-paths body)
         file-info (get-in @app-db [:paths (:file-path body-parsed)])]

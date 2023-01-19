@@ -46,6 +46,7 @@
   (case target
     "load-files" [(fn [_] (m/load-files!)) [wrapper-force-success]]
     "get-envs" [m/get-envs []]
+    "get-file-names" [m/get-file-names []]
     "get-file-info-file" [m/get-file-info-file [wrapper-remove-f]]
     "get-file-info-by-name" [m/get-file-info-by-name [wrapper-handle-multiple wrapper-remove-f]]
     "get-file-info-env" [m/get-file-info-env [wrapper-handle-multiple wrapper-remove-f]]
