@@ -26,10 +26,14 @@
 (defn read-file [f] "Reads a yaml file"
   (if (.exists f)
     (yaml/parse-string (slurp f))))
-(defn write-file! [file-name data] (spit file-name (yaml/generate-string data :dumper-options {:flow-style :block
-                                                                                               :indent 2})))
+(defn write-file! [file-name s] (spit file-name s))
+(declare assoc-to-db)
 (defn save-file-info! [file-info]
-  (write-file! (:full-path file-info) (:yaml file-info)))
+  (let [data (:yaml file-info)
+        s (yaml/generate-string data :dumper-options {:flow-style :block
+                                                      :indent     2})]
+    (swap! app-db assoc-to-db file-info)
+    (write-file! (:full-path file-info) s)))
 (defn save-to-spring-properties-file-info! [file-info]
   (spit (str spring-target-dir "/application-" (first (clojure.string/split (:name file-info) #"\.")) ".properties") (:spring-properties-str file-info))
 )
@@ -199,6 +203,8 @@
   (let [selected-props (map config/property-to-kv (kv-to-spring-properties body))
         body-parsed (assoc-file-paths body)
         file-infos (vals (get-in @app-db [:environments (:env body-parsed)]))]
+    (prn selected-props)
+    (prn body-parsed)
     (map #(config/assoc-selected-props % selected-props) file-infos)))
 (defn migrate-properties-file [body]
   (let [body-parsed (assoc-file-paths body)
