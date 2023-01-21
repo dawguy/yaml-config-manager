@@ -2,6 +2,16 @@
 
 ## Usage
 
+In `yaml_config_manager/manager.clj` update the following value to point at the target-dir (or move all configs into the sample_project_configs directory so they'll be found).
+
+```clojure
+(def target-dir "./sample_project_configs")
+```
+
+Start server in terminal locally with `clj -A:dev`
+
+Then either use the included postman collection to make updates or run a local copy of the angular companion app https://github.com/dawguy/yaml-config-manager-ng.
+
 ## License
 
 Copyright 2022 David Wright
